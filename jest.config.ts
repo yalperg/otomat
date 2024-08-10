@@ -4,7 +4,7 @@ export default {
   moduleNameMapper: {
     "^src/(.*)$": "<rootDir>/src/$1",
   },
-  setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
+  setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
   modulePathIgnorePatterns: ["./dist/"],
   coveragePathIgnorePatterns: [],
   collectCoverageFrom: ["./src/**/*.ts", "!./src/**/*.test.ts"],
