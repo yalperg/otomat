@@ -9,7 +9,7 @@ export default class DFA extends FSA {
   constructor(
     states: State[],
     transitions: Transition[],
-    startState: State,
+    startState: State | null,
     acceptStates: State[],
     alphabet: Alphabet,
   ) {

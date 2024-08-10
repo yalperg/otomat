@@ -13,14 +13,14 @@ export interface FSAJSON {
 export default class FSA {
   states: State[];
   transitions: Transition[];
-  startState: State;
+  startState: State | null;
   acceptStates: State[];
   alphabet: Alphabet;
 
   constructor(
     states: State[],
     transitions: Transition[],
-    startState: State,
+    startState: State | null,
     acceptStates: State[],
     alphabet: Alphabet,
   ) {
@@ -66,7 +66,7 @@ export default class FSA {
     this.acceptStates.push(state);
   }
 
-  toJSON(): unknown {
+  toJSON(): FSAJSON {
     return {
       states: this.states.map((state) => state.name),
       transitions: this.transitions.map((transition) => ({
@@ -74,7 +74,7 @@ export default class FSA {
         to: transition.to.name,
         symbol: transition.symbol,
       })),
-      startState: this.startState.name,
+      startState: this.startState ? this.startState.name : "",
       acceptStates: this.acceptStates.map((state) => state.name),
       alphabet: this.alphabet.getSymbols(),
     };
