@@ -61,7 +61,37 @@ export default class NFA extends FSA {
     return result;
   }
 
-  toDFA(): DFA {
+  private removeUnreachableStates(dfa: DFA) {
+    const reachableStates = new Set<State>();
+    const stack = [dfa.startState!];
+
+    while (stack.length > 0) {
+      const state = stack.pop()!;
+      if (!reachableStates.has(state)) {
+        reachableStates.add(state);
+        dfa.transitions.forEach((transition) => {
+          if (
+            transition.from === state &&
+            !reachableStates.has(transition.to)
+          ) {
+            stack.push(transition.to);
+          }
+        });
+      }
+    }
+
+    dfa.states = dfa.states.filter((state) => reachableStates.has(state));
+    dfa.transitions = dfa.transitions.filter(
+      (transition) =>
+        reachableStates.has(transition.from) &&
+        reachableStates.has(transition.to),
+    );
+    dfa.acceptStates = dfa.acceptStates.filter((state) =>
+      reachableStates.has(state),
+    );
+  }
+
+  toDFA(removeUnreachableStates: boolean = false): DFA {
     /*
      * TODO:
      * Refactor and split the method into smaller methods.
@@ -133,6 +163,10 @@ export default class NFA extends FSA {
         }
       });
     });
+
+    if (removeUnreachableStates) {
+      this.removeUnreachableStates(dfa);
+    }
 
     return dfa;
   }
