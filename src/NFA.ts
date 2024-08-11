@@ -122,6 +122,18 @@ export default class NFA extends FSA {
       }
     }
 
+    // Add transitions to empty state for missing symbols
+    dfa.states.forEach((dfaState) => {
+      symbols.forEach((symbol) => {
+        const transitionExists = dfa.transitions.some(
+          (t) => t.from === dfaState && t.symbol === symbol,
+        );
+        if (!transitionExists) {
+          dfa.addTransition(new Transition(dfaState, dfa.emptyState, symbol));
+        }
+      });
+    });
+
     return dfa;
   }
 
