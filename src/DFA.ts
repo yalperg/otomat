@@ -18,7 +18,12 @@ export default class DFA extends FSA {
     this.validateDFA();
   }
 
-  // TODO: overrire addTransition to check if transition has epsilon symbol
+  addTransition(transition: Transition) {
+    if (transition.symbol === "ε") {
+      throw new Error("DFA cannot have epsilon transitions.");
+    }
+    super.addTransition(transition);
+  }
 
   private validateDFA() {
     const transitionMap = new Map<string, State>();

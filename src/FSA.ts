@@ -47,23 +47,49 @@ export default class FSA {
   }
 
   addState(state: State) {
-    // TODO: Check if state already exists
+    if (this.states.includes(state)) {
+      throw new Error(`State ${state.name} already exists`);
+    }
     this.states.push(state);
   }
 
   addTransition(transition: Transition) {
-    // TODO: Check if transition already exists (same from, to, and symbol) and transition is valid
+    if (this.alphabet.hasSymbol(transition.symbol)) {
+      throw new Error(
+        `Symbol '${transition.symbol}' in transition from ${transition.from.name} to ${transition.to.name} is not in the alphabet.`,
+      );
+    }
+
+    this.transitions.map((t) => {
+      if (
+        t.from === transition.from &&
+        t.to === transition.to &&
+        t.symbol === transition.symbol
+      ) {
+        throw new Error(
+          `Transition from ${transition.from.name} to ${transition.to.name} with symbol ${transition.symbol} already exists`,
+        );
+      }
+    });
+
     this.transitions.push(transition);
   }
 
   setStartState(state: State) {
-    // TODO: Check if state is in states
+    if (!this.states.includes(state)) {
+      throw new Error(`State ${state.name} does not exist`);
+    }
+
     this.startState = state;
   }
 
-  addAcceptState(state: State) {
-    // TODO: Check if state is in states
-    this.acceptStates.push(state);
+  addAcceptState(states: State[]) {
+    states.forEach((state) => {
+      if (!this.states.includes(state)) {
+        throw new Error(`State ${state.name} does not exist`);
+      }
+    });
+    this.acceptStates.push(...states);
   }
 
   toJSON(): FSAJSON {

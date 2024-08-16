@@ -148,7 +148,7 @@ export default class NFA extends FSA {
         this.acceptStates.includes(state),
       );
       if (isAcceptState) {
-        dfa.addAcceptState(currentDfaState);
+        dfa.addAcceptState([currentDfaState]);
       }
     }
 
