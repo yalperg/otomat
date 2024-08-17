@@ -1,6 +1,7 @@
 import State from "./State";
 import Transition from "./Transition";
 import Alphabet from "./Alphabet";
+import ValidationError from "./ValidationError";
 
 export interface FSAJSON {
   states: string[];
@@ -24,7 +25,15 @@ export default class FSA {
     acceptStates: State[],
     alphabet: Alphabet,
   ) {
-    this.validateTransitions();
+    try {
+      this.validateTransitions(transitions, alphabet);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        console.error(`FSA Validation Error: ${error.message}`);
+      } else {
+        throw error;
+      }
+    }
 
     this.states = states;
     this.transitions = transitions;
@@ -33,14 +42,11 @@ export default class FSA {
     this.alphabet = alphabet;
   }
 
-  private validateTransitions() {
-    this.transitions.forEach((transition) => {
-      if (
-        !this.alphabet.hasSymbol(transition.symbol) &&
-        transition.symbol !== "ε"
-      ) {
-        throw new Error(
-          `Symbol '${transition.symbol}' in transition from ${transition.from.name} to ${transition.to.name} is not in the alphabet.`,
+  private validateTransitions(transitions: Transition[], alphabet: Alphabet) {
+    transitions.forEach((transition) => {
+      if (!alphabet.hasSymbol(transition.symbol) && transition.symbol !== "ε") {
+        throw new ValidationError(
+          `Symbol '${transition.symbol}' in transition from '${transition.from.name}' to '${transition.to.name}' is not in the alphabet.`,
         );
       }
     });

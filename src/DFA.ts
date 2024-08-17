@@ -2,6 +2,7 @@ import Alphabet from "./Alphabet";
 import FSA, { FSAJSON } from "./FSA";
 import State from "./State";
 import Transition from "./Transition";
+import ValidationError from "./ValidationError";
 
 export default class DFA extends FSA {
   emptyState: State;
@@ -15,14 +16,16 @@ export default class DFA extends FSA {
   ) {
     super(states, transitions, startState, acceptStates, alphabet);
     this.emptyState = new State("∅");
-    this.validateDFA();
-  }
 
-  addTransition(transition: Transition) {
-    if (transition.symbol === "ε") {
-      throw new Error("DFA cannot have epsilon transitions.");
+    try {
+      this.validateDFA();
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        console.error(`DFA Validation Error: ${error.message}`);
+      } else {
+        throw error; // Beklenmeyen hata tekrar fırlatılır
+      }
     }
-    super.addTransition(transition);
   }
 
   private validateDFA() {
@@ -30,17 +33,24 @@ export default class DFA extends FSA {
 
     this.transitions.forEach((transition) => {
       if (transition.symbol === "ε") {
-        throw new Error("DFA cannot have epsilon transitions.");
+        throw new ValidationError("DFA cannot have epsilon transitions.");
       }
 
       const key = `${transition.from.name}-${transition.symbol}`;
       if (transitionMap.has(key)) {
-        throw new Error(
-          `DFA cannot have multiple transitions for the same state and symbol: ${key}`,
+        throw new ValidationError(
+          `DFA cannot have multiple transitions from state '${transition.from.name}' with symbol '${transition.symbol}'.`,
         );
       }
       transitionMap.set(key, transition.to);
     });
+  }
+
+  addTransition(transition: Transition) {
+    if (transition.symbol === "ε") {
+      throw new ValidationError("DFA cannot have epsilon transitions.");
+    }
+    super.addTransition(transition);
   }
 
   static fromJSON(json: FSAJSON): DFA {
