@@ -60,7 +60,7 @@ export default class FSA {
   }
 
   addTransition(transition: Transition) {
-    if (this.alphabet.hasSymbol(transition.symbol)) {
+    if (!this.alphabet.hasSymbol(transition.symbol)) {
       throw new Error(
         `Symbol '${transition.symbol}' in transition from ${transition.from.name} to ${transition.to.name} is not in the alphabet.`,
       );
