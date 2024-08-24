@@ -92,21 +92,16 @@ export default class NFA extends FSA {
   }
 
   toDFA(removeUnreachableStates: boolean = false): DFA {
-    /*
-     * TODO:
-     * Refactor and split the method into smaller methods.
-     * Consider using an array and object instead of a map and set.
-     * I prefer Set and Map to use the built-in methods. But I'm not sure about the performance difference.
-     */
-
     const dfa = new DFA([], [], null, [], this.alphabet);
     const dfaStates = new Map<string, State>();
     const unmarkedStates: Set<State>[] = [];
     const startState = this.epsilonClosure(this.startState!);
     const dfaStartState = new State(this.stateSetName(startState));
+
+    dfa.addState(dfaStartState); // State is added to DFA before setting it as start state
     dfa.setStartState(dfaStartState);
+
     dfaStates.set(this.stateSetKey(startState), dfaStartState);
-    dfa.addState(dfaStartState);
     unmarkedStates.push(startState);
 
     const symbols = new Set(this.transitions.map((t) => t.symbol));
@@ -130,7 +125,7 @@ export default class NFA extends FSA {
           if (!dfaStates.has(key)) {
             const newState = new State(this.stateSetName(epsilonClosure));
             dfaStates.set(key, newState);
-            dfa.addState(newState);
+            dfa.addState(newState); // Ensure state is added to DFA states
             unmarkedStates.push(epsilonClosure);
           }
           toState = dfaStates.get(key)!;
