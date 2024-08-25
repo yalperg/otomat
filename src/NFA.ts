@@ -4,7 +4,22 @@ import State from "./State";
 import Transition from "./Transition";
 import Alphabet from "./Alphabet";
 
+/**
+ * Represents a Nondeterministic Finite Automaton (NFA).
+ * An NFA is a specific type of FSA where for each state and symbol,
+ * there can be multiple transitions to different states, or no transition at all.
+ * NFAs can also have epsilon (ε) transitions, which allow the automaton to transition
+ * between states without consuming any input symbols.
+ */
 export default class NFA extends FSA {
+  /**
+   * Creates a new NFA.
+   * @param states The set of states in the automaton.
+   * @param transitions The set of transitions between states.
+   * @param startState The initial state of the automaton.
+   * @param acceptStates The set of accept states.
+   * @param alphabet The alphabet of symbols used in transitions.
+   */
   constructor(
     states: State[],
     transitions: Transition[],
@@ -15,6 +30,12 @@ export default class NFA extends FSA {
     super(states, transitions, startState, acceptStates, alphabet);
   }
 
+  /**
+   * Generates a string key that uniquely identifies a set of states.
+   * This key is used to track sets of states in the DFA conversion process.
+   * @param states The set of states to generate a key for.
+   * @returns A string key representing the set of states.
+   */
   private stateSetName(states: Set<State>): string {
     return (
       [...states]
@@ -24,10 +45,22 @@ export default class NFA extends FSA {
     );
   }
 
+  /**
+   * Returns a unique key for a given set of states.
+   * @param states The set of states to generate a key for.
+   * @returns A string key representing the set of states.
+   */
   private stateSetKey(states: Set<State>): string {
     return this.stateSetName(states);
   }
 
+  /**
+   * Computes the epsilon closure for a given state.
+   * The epsilon closure is the set of all states that can be reached
+   * from the given state via epsilon (ε) transitions.
+   * @param state The state for which to compute the epsilon closure.
+   * @returns A set of states representing the epsilon closure.
+   */
   private epsilonClosure(state: State): Set<State> {
     const closure = new Set([state]);
     const stack = [state];
@@ -49,6 +82,13 @@ export default class NFA extends FSA {
     return closure;
   }
 
+  /**
+   * Computes the set of states that can be reached from a given set of states
+   * by consuming a specific input symbol.
+   * @param states The set of states to start from.
+   * @param symbol The input symbol to consume.
+   * @returns A set of states that can be reached by the input symbol.
+   */
   private move(states: Set<State>, symbol: string): Set<State> {
     const result = new Set<State>();
     states.forEach((state) => {
@@ -61,6 +101,11 @@ export default class NFA extends FSA {
     return result;
   }
 
+  /**
+   * Removes states from a DFA that cannot be reached from the start state.
+   * This process can be used to simplify the DFA after conversion from an NFA.
+   * @param dfa The DFA to simplify.
+   */
   private removeUnreachableStates(dfa: DFA) {
     const reachableStates = new Set<State>();
     const stack = [dfa.startState!];
@@ -91,6 +136,12 @@ export default class NFA extends FSA {
     );
   }
 
+  /**
+   * Converts this NFA to an equivalent DFA using the subset construction method.
+   * This process may include the removal of unreachable states if specified.
+   * @param removeUnreachableStates Whether to remove unreachable states in the resulting DFA.
+   * @returns The equivalent DFA.
+   */
   toDFA(removeUnreachableStates: boolean = false): DFA {
     const dfa = new DFA([], [], null, [], this.alphabet);
     const dfaStates = new Map<string, State>();
@@ -166,6 +217,11 @@ export default class NFA extends FSA {
     return dfa;
   }
 
+  /**
+   * Creates an NFA from a JSON representation.
+   * @param json The JSON representation of the NFA.
+   * @returns A new NFA instance.
+   */
   static fromJSON(json: FSAJSON): NFA {
     const fsa = FSA.fromJSON(json);
     return new NFA(

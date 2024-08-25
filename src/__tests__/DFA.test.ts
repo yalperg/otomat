@@ -2,7 +2,7 @@ import DFA from "../DFA";
 import State from "../State";
 import Transition from "../Transition";
 import Alphabet from "../Alphabet";
-import ValidationError from "../ValidationError";
+import ValidationError from "../errors/ValidationError";
 
 describe("Deterministic Finite Automaton (DFA)", () => {
   let alphabet: Alphabet;

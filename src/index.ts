@@ -5,4 +5,5 @@ import State from "./State";
 import Transition from "./Transition";
 import Alphabet from "./Alphabet";
 
-export { FSA, State, Transition, Alphabet, type FSAJSON, DFA, NFA };
+export { State, Transition, Alphabet, FSA, DFA, NFA };
+export type { FSAJSON };
