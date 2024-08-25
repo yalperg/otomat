@@ -30,8 +30,13 @@ class NFA {
   + stateSetKey(states: Set<State>): string
   + epsilonClosure(state: State): Set<State>
   + move(states: Set<State>, symbol: string): Set<State>
+  + getDFAStartState(): { startState: Set<State>; dfaStartState: State }
+  + buildDFATransitions(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: Set<State>[]): void
+  + getEpsilonClosureForMove(moveResult: Set<State>): Set<State>
+  + markAcceptStates(currentStates: Set<State>, dfa: DFA, currentDfaState: State): void
+  + addMissingTransitions(dfa: DFA, symbols: Set<string>): void
   + removeUnreachableStates(dfa: DFA)
-  + toDFA(removeUnreachableStates: boolean): DFA
+  + toDFA(removeUnreachableStates: boolean = false): DFA
   + static fromJSON(json: FSAJSON): NFA
 }
 
