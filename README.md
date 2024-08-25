@@ -1,6 +1,6 @@
 # Otomat
 
-**Otomat** is a TypeScript library for working with Finite State Automata (FSA), specifically for converting Non-deterministic Finite Automata (NFA) to Deterministic Finite Automata (DFA). This library provides fundamental operations for states, transitions, and alphabets in FSAs, along with powerful conversion and validation capabilities.
+**Otomat** is a TypeScript library for working with Finite State Automata (FSA), specifically for converting Non-deterministic Finite Automata (NFA) to Deterministic Finite Automata (DFA). This library provides fundamental operations for states, transitions, and alphabets in FSAs, along with conversion and validation capabilities.
 
 ## Features
 
