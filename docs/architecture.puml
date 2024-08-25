@@ -1,0 +1,65 @@
+@startuml architecture
+
+class FSA {
+  - states: State[]
+  - transitions: Transition[]
+  - startState: State | null
+  - acceptStates: State[]
+  - alphabet: Alphabet
+  + addState(state: State): void
+  + addTransition(transition: Transition): void
+  + setStartState(state: State): void
+  + addAcceptState(states: State[]): void
+  + toJSON(): FSAJSON
+  + validateTransitions(transitions: Transition[], alphabet: Alphabet): void
+}
+
+class DFA {
+  - emptyState: State
+  + validateDFA(): void
+  + addTransition(transition: Transition): void
+  + fromJSON(json: FSAJSON): DFA
+}
+
+class NFA {
+  + stateSetName(states: Set<State>): string
+  + stateSetKey(states: Set<State>): string
+  + epsilonClosure(state: State): Set<State>
+  + move(states: Set<State>, symbol: string): Set<State>
+  + removeUnreachableStates(dfa: DFA): void
+  + toDFA(removeUnreachableStates: boolean): DFA
+  + fromJSON(json: FSAJSON): NFA
+}
+
+class State {
+  - name: string
+  + getName(): string
+}
+
+class Transition {
+  - from: State
+  - to: State
+  - symbol: string
+}
+
+class Alphabet {
+  - symbols: Set<string>
+  + addSymbol(symbol: string): void
+  + removeSymbol(symbol: string): void
+  + hasSymbol(symbol: string): boolean
+  + getSymbols(): string[]
+}
+
+class ValidationError {
+  - message: string
+}
+
+FSA --> State
+FSA --> Transition
+FSA --> Alphabet
+FSA <|-- DFA
+FSA <|-- NFA
+DFA --> ValidationError
+NFA --> DFA : "toDFA()"
+
+@enduml
