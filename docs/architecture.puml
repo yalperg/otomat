@@ -1,65 +1,75 @@
 @startuml architecture
 
 class FSA {
-  - states: State[]
-  - transitions: Transition[]
-  - startState: State | null
-  - acceptStates: State[]
-  - alphabet: Alphabet
-  + addState(state: State): void
-  + addTransition(transition: Transition): void
-  + setStartState(state: State): void
-  + addAcceptState(states: State[]): void
+  - State[] states
+  - Transition[] transitions
+  - State startState
+  - State[] acceptStates
+  - Alphabet alphabet
+  + FSA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
+  + validateTransitions(transitions: Transition[], alphabet: Alphabet)
+  + addState(state: State)
+  + addTransition(transition: Transition)
+  + setStartState(state: State)
+  + addAcceptState(states: State[])
   + toJSON(): FSAJSON
-  + validateTransitions(transitions: Transition[], alphabet: Alphabet): void
+  + static fromJSON(json: FSAJSON): FSA
 }
 
 class DFA {
-  - emptyState: State
-  + validateDFA(): void
-  + addTransition(transition: Transition): void
-  + fromJSON(json: FSAJSON): DFA
+  - State emptyState
+  + DFA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
+  + validateDFA()
+  + addTransition(transition: Transition)
+  + static fromJSON(json: FSAJSON): DFA
 }
 
 class NFA {
+  + NFA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
   + stateSetName(states: Set<State>): string
   + stateSetKey(states: Set<State>): string
   + epsilonClosure(state: State): Set<State>
   + move(states: Set<State>, symbol: string): Set<State>
-  + removeUnreachableStates(dfa: DFA): void
+  + removeUnreachableStates(dfa: DFA)
   + toDFA(removeUnreachableStates: boolean): DFA
-  + fromJSON(json: FSAJSON): NFA
+  + static fromJSON(json: FSAJSON): NFA
 }
 
 class State {
-  - name: string
-  + getName(): string
+  - string name
+  + State(name: string)
 }
 
 class Transition {
-  - from: State
-  - to: State
-  - symbol: string
+  - State from
+  - State to
+  - string symbol
+  + Transition(from: State, to: State, symbol: string)
 }
 
 class Alphabet {
-  - symbols: Set<string>
-  + addSymbol(symbol: string): void
-  + removeSymbol(symbol: string): void
+  - Set<string> symbols
+  + Alphabet(symbols: string[])
+  + addSymbol(symbol: string)
+  + removeSymbol(symbol: string)
   + hasSymbol(symbol: string): boolean
   + getSymbols(): string[]
 }
 
 class ValidationError {
-  - message: string
+  - string message
+  + ValidationError(message: string)
 }
 
-FSA --> State
-FSA --> Transition
-FSA --> Alphabet
 FSA <|-- DFA
 FSA <|-- NFA
-DFA --> ValidationError
-NFA --> DFA : "toDFA()"
-
+DFA o-- State
+DFA o-- Transition
+DFA o-- Alphabet
+NFA o-- State
+NFA o-- Transition
+NFA o-- Alphabet
+Transition *-- State
+FSA ..> ValidationError
+DFA ..> ValidationError
 @enduml

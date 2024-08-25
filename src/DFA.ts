@@ -23,7 +23,7 @@ export default class DFA extends FSA {
       if (error instanceof ValidationError) {
         console.error(`DFA Validation Error: ${error.message}`);
       } else {
-        throw error; // Beklenmeyen hata tekrar fırlatılır
+        throw error;
       }
     }
   }
