@@ -249,6 +249,18 @@ export default class NFA extends FSA {
   }
 
   /**
+   * Generates all subsets (power set) of an array of elements.
+   * @param arr The array to generate subsets from.
+   * @returns An array of all possible subsets.
+   */
+  private powerSet<T>(arr: T[]): T[][] {
+    return arr.reduce(
+      (subsets, value) => subsets.concat(subsets.map((set) => [...set, value])),
+      [[]] as T[][],
+    );
+  }
+
+  /**
    * Converts this NFA to an equivalent DFA using the subset construction method.
    * This process may include the removal of unreachable states if specified.
    * @param removeUnreachableStates Whether to remove unreachable states in the resulting DFA.
@@ -265,6 +277,20 @@ export default class NFA extends FSA {
     dfa.setStartState(dfaStartState);
     dfaStates.set(this.stateSetKey(startState), dfaStartState);
     unmarkedStates.push(startState);
+
+    // Generate all possible state sets
+    const allStateSets = this.powerSet(this.states).map((set) => new Set(set));
+
+    // Create DFA states for all state sets
+    allStateSets.forEach((stateSet) => {
+      const key = this.stateSetKey(stateSet);
+      if (!dfaStates.has(key)) {
+        const newState = new State(this.stateSetName(stateSet));
+        dfaStates.set(key, newState);
+        dfa.addState(newState);
+        unmarkedStates.push(stateSet);
+      }
+    });
 
     // Build the DFA transitions
     this.buildDFATransitions(dfa, dfaStates, unmarkedStates);
