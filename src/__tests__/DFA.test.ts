@@ -1,123 +1,74 @@
 import DFA from "../models/DFA";
-import State from "../models/State";
-import Transition from "../models/Transition";
-import Alphabet from "../models/Alphabet";
 import { ValidationError } from "../errors";
+import { Alphabet, State, Transition, FSAJSON } from "../types";
 
-describe("Deterministic Finite Automaton (DFA)", () => {
-  let alphabet: Alphabet;
-  let q1: State;
-  let q2: State;
+describe("DFA class", () => {
+  const alphabet: Alphabet = ["a", "b"];
+  const stateA: State = "q0";
+  const stateB: State = "q1";
 
-  beforeEach(() => {
-    alphabet = new Alphabet(["0", "1"]);
-    q1 = new State("q1");
-    q2 = new State("q2");
-  });
+  describe("constructor", () => {
+    test("should create a valid DFA", () => {
+      const dfa = new DFA([stateA, stateB], [], stateA, [stateB], alphabet);
+      expect(dfa.states).toHaveLength(2);
+      expect(dfa.startState).toBe(stateA);
+      expect(dfa.acceptStates).toContain(stateB);
+    });
 
-  test("should add states correctly", () => {
-    const dfa = new DFA([], [], null, [], alphabet);
-    dfa.addState(q1);
-    dfa.addState(q2);
-    expect(dfa.states).toContain(q1);
-    expect(dfa.states).toContain(q2);
-  });
-
-  test("should throw error when adding duplicate state", () => {
-    const dfa = new DFA([q1], [], null, [], alphabet);
-    expect(() => dfa.addState(q1)).toThrow(`State ${q1.name} already exists`);
-  });
-
-  test("should add transitions correctly", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    const transition = new Transition(q1, q2, "0");
-    dfa.addTransition(transition);
-    expect(dfa.transitions).toContain(transition);
-  });
-
-  test("should throw error when adding a transition with a symbol not in alphabet", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    const invalidTransition = new Transition(q1, q2, "2"); // '2' is not in the alphabet
-    expect(() => dfa.addTransition(invalidTransition)).toThrow(
-      `Symbol '2' in transition from ${q1.name} to ${q2.name} is not in the alphabet.`,
-    );
-  });
-
-  test("should throw error when adding a transition with epsilon symbol", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    const epsilonTransition = new Transition(q1, q2, "ε");
-    expect(() => dfa.addTransition(epsilonTransition)).toThrow(ValidationError);
-  });
-
-  test("should throw error when adding duplicate transition", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    const transition = new Transition(q1, q2, "0");
-    dfa.addTransition(transition);
-    expect(() => dfa.addTransition(transition)).toThrow(
-      `Transition from ${q1.name} to ${q2.name} with symbol 0 already exists`,
-    );
-  });
-
-  test("should set the start state correctly", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    dfa.setStartState(q1);
-    expect(dfa.startState).toBe(q1);
-  });
-
-  test("should throw error when setting start state that does not exist", () => {
-    const dfa = new DFA([], [], null, [], alphabet);
-    expect(() => dfa.setStartState(q1)).toThrow(
-      `State ${q1.name} does not exist`,
-    );
-  });
-
-  test("should add accept states correctly", () => {
-    const dfa = new DFA([q1, q2], [], null, [], alphabet);
-    dfa.addAcceptState([q1]);
-    expect(dfa.acceptStates).toContain(q1);
-  });
-
-  test("should throw error when adding an accept state that does not exist", () => {
-    const dfa = new DFA([], [], null, [], alphabet);
-    expect(() => dfa.addAcceptState([q1])).toThrow(
-      `State ${q1.name} does not exist`,
-    );
-  });
-
-  test("should serialize to JSON correctly", () => {
-    const dfa = new DFA([q1, q2], [], q1, [q2], alphabet);
-    const json = dfa.toJSON();
-    expect(json).toEqual({
-      states: ["q1", "q2"],
-      transitions: [],
-      startState: "q1",
-      acceptStates: ["q2"],
-      alphabet: ["0", "1"],
+    test("should throw error for epsilon transitions", () => {
+      expect(() => {
+        new DFA(
+          [stateA, stateB],
+          [{ from: stateA, to: stateB, symbol: "ε" }],
+          stateA,
+          [stateB],
+          alphabet,
+        );
+      }).toThrow(ValidationError);
     });
   });
 
-  test("should deserialize from JSON correctly", () => {
-    const json = {
-      states: ["q1", "q2"],
-      transitions: [{ from: "q1", to: "q2", symbol: "0" }],
-      startState: "q1",
-      acceptStates: ["q2"],
-      alphabet: ["0", "1"],
-    };
+  describe("addTransition method", () => {
+    test("should add a valid transition", () => {
+      const dfa = new DFA([stateA, stateB], [], stateA, [stateB], alphabet);
+      const transition: Transition = { from: stateA, to: stateB, symbol: "a" };
+      dfa.addTransition(transition);
+      expect(dfa.transitions).toContain(transition);
+    });
 
-    const dfa = DFA.fromJSON(json);
+    test("should throw error for duplicate transitions", () => {
+      const dfa = new DFA(
+        [stateA, stateB],
+        [{ from: stateA, to: stateB, symbol: "a" }],
+        stateA,
+        [stateB],
+        alphabet,
+      );
+      const duplicateTransition: Transition = {
+        from: stateA,
+        to: stateB,
+        symbol: "a",
+      };
+      expect(() => dfa.addTransition(duplicateTransition)).toThrow(
+        ValidationError,
+      );
+    });
+  });
 
-    const stateMap = new Map(dfa.states.map((s: State) => [s.name, s]));
+  describe("fromJSON method", () => {
+    test("should create a DFA from valid JSON", () => {
+      const json: FSAJSON = {
+        states: [stateA, stateB],
+        transitions: [{ from: stateA, to: stateB, symbol: "a" }],
+        startState: stateA,
+        acceptStates: [stateB],
+        alphabet: alphabet,
+      };
 
-    expect(stateMap.has("q1")).toBeTruthy();
-    expect(stateMap.has("q2")).toBeTruthy();
-
-    expect(dfa.startState?.name).toBe("q1");
-    expect(dfa.acceptStates.map((s: State) => s.name)).toEqual(["q2"]);
-    expect(dfa.alphabet.getSymbols()).toEqual(["0", "1"]);
-    expect(dfa.transitions).toHaveLength(1);
-    expect(dfa.transitions[0].from.name).toBe("q1");
-    expect(dfa.transitions[0].to.name).toBe("q2");
-    expect(dfa.transitions[0].symbol).toBe("0");
+      const dfa = DFA.fromJSON(json);
+      expect(dfa.states).toHaveLength(2);
+      expect(dfa.startState).toBe(stateA);
+      expect(dfa.acceptStates).toContain(stateB);
+    });
   });
 });

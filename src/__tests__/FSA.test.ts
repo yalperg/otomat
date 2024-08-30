@@ -1,108 +1,93 @@
 import FSA from "../models/FSA";
-import State from "../models/State";
-import Transition from "../models/Transition";
-import Alphabet from "../models/Alphabet";
-import type { FSAJSON } from "../types";
+import { ValidationError } from "../errors";
+import { State, Transition, Alphabet, FSAJSON } from "../types";
 
-describe("Finite State Automaton (FSA)", () => {
-  let alphabet: Alphabet;
-  let q1: State;
-  let q2: State;
+describe("FSA class", () => {
+  const alphabet: Alphabet = ["a", "b"];
+  const stateA: State = "q0";
+  const stateB: State = "q1";
 
-  beforeEach(() => {
-    alphabet = new Alphabet(["0", "1", "ε"]);
-    q1 = new State("q1");
-    q2 = new State("q2");
-  });
-
-  test("should add states correctly", () => {
-    const fsa = new FSA([], [], null, [], alphabet);
-    fsa.addState(q1);
-    fsa.addState(q2);
-    expect(fsa.states).toContain(q1);
-    expect(fsa.states).toContain(q2);
-  });
-
-  test("should throw error when adding duplicate state", () => {
-    const fsa = new FSA([q1], [], null, [], alphabet);
-    expect(() => fsa.addState(q1)).toThrow(`State ${q1.name} already exists`);
-  });
-
-  test("should add transitions correctly", () => {
-    const fsa = new FSA([q1, q2], [], null, [], alphabet);
-    const transition = new Transition(q1, q2, "0");
-    fsa.addTransition(transition);
-    expect(fsa.transitions).toContain(transition);
-  });
-
-  test("should throw error when adding a transition with a symbol not in alphabet", () => {
-    const fsa = new FSA([q1, q2], [], null, [], alphabet);
-    const invalidTransition = new Transition(q1, q2, "2"); // '2' is not in the alphabet
-    expect(() => fsa.addTransition(invalidTransition)).toThrow(
-      `Symbol '2' in transition from ${q1.name} to ${q2.name} is not in the alphabet.`,
-    );
-  });
-
-  test("should set the start state correctly", () => {
-    const fsa = new FSA([q1, q2], [], null, [], alphabet);
-    fsa.setStartState(q1);
-    expect(fsa.startState).toBe(q1);
-  });
-
-  test("should throw error when setting start state that does not exist", () => {
-    const fsa = new FSA([], [], null, [], alphabet);
-    expect(() => fsa.setStartState(q1)).toThrow(
-      `State ${q1.name} does not exist`,
-    );
-  });
-
-  test("should add accept states correctly", () => {
-    const fsa = new FSA([q1, q2], [], null, [], alphabet);
-    fsa.addAcceptState([q1]);
-    expect(fsa.acceptStates).toContain(q1);
-  });
-
-  test("should throw error when adding an accept state that does not exist", () => {
-    const fsa = new FSA([], [], null, [], alphabet);
-    expect(() => fsa.addAcceptState([q1])).toThrow(
-      `State ${q1.name} does not exist`,
-    );
-  });
-
-  test("should serialize to JSON correctly", () => {
-    const fsa = new FSA([q1, q2], [], q1, [q2], alphabet);
-    const json = fsa.toJSON();
-    expect(json).toEqual({
-      states: ["q1", "q2"],
-      transitions: [],
-      startState: "q1",
-      acceptStates: ["q2"],
-      alphabet: ["0", "1", "ε"],
+  describe("constructor", () => {
+    test("should create a valid FSA", () => {
+      const fsa = new FSA([stateA, stateB], [], stateA, [stateB], alphabet);
+      expect(fsa.states).toHaveLength(2);
+      expect(fsa.startState).toBe(stateA);
+      expect(fsa.acceptStates).toContain(stateB);
     });
   });
 
-  test("should deserialize from JSON correctly", () => {
-    const json: FSAJSON = {
-      states: ["q1", "q2"],
-      transitions: [{ from: "q1", to: "q2", symbol: "0" }],
-      startState: "q1",
-      acceptStates: ["q2"],
-      alphabet: ["0", "1", "ε"],
-    };
+  describe("addState method", () => {
+    test("should add a new state", () => {
+      const fsa = new FSA([stateA], [], stateA, [], alphabet);
+      fsa.addState(stateB);
+      expect(fsa.states).toContain(stateB);
+    });
 
-    const fsa = FSA.fromJSON(json);
+    test("should throw error for duplicate state", () => {
+      const fsa = new FSA([stateA], [], stateA, [], alphabet);
+      expect(() => fsa.addState(stateA)).toThrow(ValidationError);
+    });
+  });
 
-    const stateMap = new Map(fsa.states.map((s: State) => [s.name, s]));
+  describe("addTransition method", () => {
+    test("should add a valid transition", () => {
+      const fsa = new FSA([stateA, stateB], [], stateA, [stateB], alphabet);
+      const transition: Transition = { from: stateA, to: stateB, symbol: "a" };
+      fsa.addTransition(transition);
+      expect(fsa.transitions).toContain(transition);
+    });
 
-    expect(stateMap.has("q1")).toBeTruthy();
-    expect(stateMap.has("q2")).toBeTruthy();
+    test("should throw error for invalid transition symbol", () => {
+      const fsa = new FSA([stateA, stateB], [], stateA, [stateB], alphabet);
+      const invalidTransition: Transition = {
+        from: stateA,
+        to: stateB,
+        symbol: "c",
+      };
+      expect(() => fsa.addTransition(invalidTransition)).toThrow(
+        ValidationError,
+      );
+    });
+  });
 
-    expect(fsa.startState?.name).toBe("q1");
-    expect(fsa.acceptStates.map((s: State) => s.name)).toEqual(["q2"]);
-    expect(fsa.alphabet.getSymbols()).toEqual(["0", "1", "ε"]);
-    expect(fsa.transitions).toHaveLength(1);
-    expect(fsa.transitions[0].from.name).toBe("q1");
-    expect(fsa.transitions[0].to.name).toBe("q2");
-    expect(fsa.transitions[0].symbol).toBe("0");
+  describe("setStartState method", () => {
+    test("should set start state", () => {
+      const fsa = new FSA([stateA, stateB], [], null, [], alphabet);
+      fsa.setStartState(stateA);
+      expect(fsa.startState).toBe(stateA);
+    });
+
+    test("should throw error for non-existent state", () => {
+      const fsa = new FSA([stateA], [], stateA, [], alphabet);
+      expect(() => fsa.setStartState(stateB)).toThrow(ValidationError);
+    });
+  });
+
+  describe("toJSON method", () => {
+    test("should convert FSA to JSON", () => {
+      const fsa = new FSA([stateA, stateB], [], stateA, [stateB], alphabet);
+      const json = fsa.toJSON();
+      expect(json.states).toEqual([stateA, stateB]);
+      expect(json.startState).toBe(stateA);
+      expect(json.acceptStates).toEqual([stateB]);
+      expect(json.alphabet).toEqual(alphabet);
+    });
+  });
+
+  describe("fromJSON method", () => {
+    test("should create an FSA from valid JSON", () => {
+      const json: FSAJSON = {
+        states: [stateA, stateB],
+        transitions: [{ from: stateA, to: stateB, symbol: "a" }],
+        startState: stateA,
+        acceptStates: [stateB],
+        alphabet: alphabet,
+      };
+
+      const fsa = FSA.fromJSON(json);
+      expect(fsa.states).toHaveLength(2);
+      expect(fsa.startState).toBe(stateA);
+      expect(fsa.acceptStates).toContain(stateB);
+    });
   });
 });

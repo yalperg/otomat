@@ -1,9 +1,6 @@
 import FSA from "./FSA";
 import DFA from "./DFA";
-import State from "./State";
-import Transition from "./Transition";
-import Alphabet from "./Alphabet";
-import type { FSAJSON } from "../types";
+import type { Alphabet, FSAJSON, State, Transition } from "../types";
 
 /**
  * Represents a Nondeterministic Finite Automaton (NFA).
@@ -40,7 +37,7 @@ export default class NFA extends FSA {
   private stateSetName(states: Set<State>): string {
     return (
       [...states]
-        .map((state) => state.name)
+        .map((state) => state)
         .sort()
         .join(",") || "∅"
     );
@@ -109,7 +106,7 @@ export default class NFA extends FSA {
    */
   private getDFAStartState(): { startState: Set<State>; dfaStartState: State } {
     const startState = this.epsilonClosure(this.startState!);
-    const dfaStartState = new State(this.stateSetName(startState));
+    const dfaStartState = this.stateSetName(startState);
     return { startState, dfaStartState };
   }
 
@@ -142,7 +139,7 @@ export default class NFA extends FSA {
 
         if (epsilonClosure.size > 0) {
           if (!dfaStates.has(key)) {
-            const newState = new State(this.stateSetName(epsilonClosure));
+            const newState = this.stateSetName(epsilonClosure);
             dfaStates.set(key, newState);
             dfa.addState(newState); // Ensure state is added to DFA states
             unmarkedStates.push(epsilonClosure);
@@ -155,7 +152,7 @@ export default class NFA extends FSA {
           }
         }
 
-        dfa.addTransition(new Transition(currentDfaState, toState, symbol));
+        dfa.addTransition({ from: currentDfaState, to: toState, symbol });
       });
 
       this.markAcceptStates(currentStates, dfa, currentDfaState);
@@ -208,7 +205,7 @@ export default class NFA extends FSA {
           (t) => t.from === dfaState && t.symbol === symbol,
         );
         if (!transitionExists) {
-          dfa.addTransition(new Transition(dfaState, dfa.emptyState, symbol));
+          dfa.addTransition({ from: dfaState, to: dfa.emptyState, symbol });
         }
       });
     });
@@ -286,7 +283,7 @@ export default class NFA extends FSA {
     allStateSets.forEach((stateSet) => {
       const key = this.stateSetKey(stateSet);
       if (!dfaStates.has(key)) {
-        const newState = new State(this.stateSetName(stateSet));
+        const newState = this.stateSetName(stateSet);
         dfaStates.set(key, newState);
         dfa.addState(newState);
         unmarkedStates.push(stateSet);

@@ -1,7 +1,17 @@
-export interface FSAJSON {
-  states: string[];
-  transitions: { from: string; to: string; symbol: string }[];
-  startState: string;
-  acceptStates: string[];
-  alphabet: string[];
-}
+export type State = string;
+
+export type Transition = {
+  from: State;
+  to: State;
+  symbol: string;
+};
+
+export type Alphabet = string[];
+
+export type FSAJSON = {
+  states: State[];
+  transitions: Transition[];
+  startState: State | null;
+  acceptStates: State[];
+  alphabet: Alphabet;
+};

@@ -1,9 +1,6 @@
-import Alphabet from "./Alphabet";
 import FSA from "./FSA";
-import State from "./State";
-import Transition from "./Transition";
 import { ValidationError } from "../errors";
-import type { FSAJSON } from "../types";
+import type { Alphabet, FSAJSON, State, Transition } from "../types";
 
 /**
  * Represents a Deterministic Finite Automaton (DFA).
@@ -29,17 +26,8 @@ export default class DFA extends FSA {
     alphabet: Alphabet,
   ) {
     super(states, transitions, startState, acceptStates, alphabet);
-    this.emptyState = new State("∅");
-
-    try {
-      this.validateDFA();
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        console.error(`DFA Validation Error: ${error.message}`);
-      } else {
-        throw error; // Unexpected errors are rethrown
-      }
-    }
+    this.emptyState = "∅";
+    this.validateDFA();
   }
 
   /**
@@ -55,10 +43,10 @@ export default class DFA extends FSA {
         throw new ValidationError("DFA cannot have epsilon transitions.");
       }
 
-      const key = `${transition.from.name}-${transition.symbol}`;
+      const key = `${transition.from}-${transition.symbol}`;
       if (transitionMap.has(key)) {
         throw new ValidationError(
-          `DFA cannot have multiple transitions from state '${transition.from.name}' with symbol '${transition.symbol}'.`,
+          `DFA cannot have multiple transitions from state '${transition.from}' with symbol '${transition.symbol}'.`,
         );
       }
       transitionMap.set(key, transition.to);
