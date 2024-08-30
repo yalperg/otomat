@@ -1,7 +1,7 @@
-import NFA from "../NFA";
-import State from "../State";
-import Transition from "../Transition";
-import Alphabet from "../Alphabet";
+import NFA from "../models/NFA";
+import State from "../models/State";
+import Transition from "../models/Transition";
+import Alphabet from "../models/Alphabet";
 
 describe("NFA class", () => {
   describe("toDFA method", () => {

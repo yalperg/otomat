@@ -16,16 +16,18 @@ export default class Alphabet {
   /**
    * Adds a symbol to the alphabet.
    * @param symbol The symbol to add.
+   * @returns void
    */
-  addSymbol(symbol: string) {
+  addSymbol(symbol: string): void {
     this.symbols.add(symbol);
   }
 
   /**
    * Removes a symbol from the alphabet.
    * @param symbol The symbol to remove.
+   * @returns void
    */
-  removeSymbol(symbol: string) {
+  removeSymbol(symbol: string): void {
     this.symbols.delete(symbol);
   }
 

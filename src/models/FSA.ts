@@ -1,15 +1,9 @@
 import State from "./State";
 import Transition from "./Transition";
 import Alphabet from "./Alphabet";
-import ValidationError from "./errors/ValidationError";
-
-export interface FSAJSON {
-  states: string[];
-  transitions: { from: string; to: string; symbol: string }[];
-  startState: string;
-  acceptStates: string[];
-  alphabet: string[];
-}
+import { ValidationError } from "../errors";
+import { IFiniteStateAutomaton } from "../interfaces/IFiniteStateAutomaton";
+import { FSAJSON } from "../types";
 
 /**
  * Represents a Finite State Automaton (FSA), which is the base class
@@ -17,7 +11,7 @@ export interface FSAJSON {
  * An FSA consists of a set of states, transitions, a start state,
  * a set of accept states, and an alphabet of symbols.
  */
-export default class FSA {
+export default class FSA implements IFiniteStateAutomaton {
   states: State[];
   transitions: Transition[];
   startState: State | null;

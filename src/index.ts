@@ -1,9 +1,10 @@
-import FSA, { FSAJSON } from "./FSA";
-import DFA from "./DFA";
-import NFA from "./NFA";
-import State from "./State";
-import Transition from "./Transition";
-import Alphabet from "./Alphabet";
-
-export { State, Transition, Alphabet, FSA, DFA, NFA };
-export type { FSAJSON };
+export { default as State } from "./models/State";
+export { default as Transition } from "./models/Transition";
+export { default as Alphabet } from "./models/Alphabet";
+export { default as FSA } from "./models/FSA";
+export { default as DFA } from "./models/DFA";
+export { default as NFA } from "./models/NFA";
+export { ValidationError, StateError, TransitionError } from "./errors";
+export { AutomatonFactory } from "./factories/AutomatonFactory";
+export type { FSAJSON } from "./types";
+export type { IFiniteStateAutomaton } from "./interfaces/IFiniteStateAutomaton";

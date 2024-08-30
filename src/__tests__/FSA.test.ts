@@ -1,7 +1,8 @@
-import FSA, { FSAJSON } from "../FSA";
-import State from "../State";
-import Transition from "../Transition";
-import Alphabet from "../Alphabet";
+import FSA from "../models/FSA";
+import State from "../models/State";
+import Transition from "../models/Transition";
+import Alphabet from "../models/Alphabet";
+import type { FSAJSON } from "../types";
 
 describe("Finite State Automaton (FSA)", () => {
   let alphabet: Alphabet;

@@ -1,8 +1,8 @@
-import DFA from "../DFA";
-import State from "../State";
-import Transition from "../Transition";
-import Alphabet from "../Alphabet";
-import ValidationError from "../errors/ValidationError";
+import DFA from "../models/DFA";
+import State from "../models/State";
+import Transition from "../models/Transition";
+import Alphabet from "../models/Alphabet";
+import { ValidationError } from "../errors";
 
 describe("Deterministic Finite Automaton (DFA)", () => {
   let alphabet: Alphabet;

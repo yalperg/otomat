@@ -1,8 +1,9 @@
 import Alphabet from "./Alphabet";
-import FSA, { FSAJSON } from "./FSA";
+import FSA from "./FSA";
 import State from "./State";
 import Transition from "./Transition";
-import ValidationError from "./errors/ValidationError";
+import { ValidationError } from "../errors";
+import type { FSAJSON } from "../types";
 
 /**
  * Represents a Deterministic Finite Automaton (DFA).

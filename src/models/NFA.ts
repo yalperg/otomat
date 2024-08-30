@@ -1,8 +1,9 @@
-import FSA, { FSAJSON } from "./FSA";
+import FSA from "./FSA";
 import DFA from "./DFA";
 import State from "./State";
 import Transition from "./Transition";
 import Alphabet from "./Alphabet";
+import type { FSAJSON } from "../types";
 
 /**
  * Represents a Nondeterministic Finite Automaton (NFA).
