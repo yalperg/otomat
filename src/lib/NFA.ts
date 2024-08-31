@@ -29,212 +29,216 @@ export default class NFA extends FSA {
   }
 
   /**
-   * Generates a string key that uniquely identifies a set of states.
-   * This key is used to track sets of states in the DFA conversion process.
-   * @param states The set of states to generate a key for.
-   * @returns A string key representing the set of states.
+   * Converts the NFA to an equivalent DFA using the subset construction algorithm.
+   * @param removeUnreachableStates Optional flag to remove unreachable states from the resulting DFA.
+   * @returns The equivalent DFA.
    */
-  private stateSetName(states: Set<State>): string {
-    return (
-      [...states]
-        .map((state) => state)
-        .sort()
-        .join(",") || "∅"
-    );
+  toDFA(removeUnreachableStates: boolean = false): DFA {
+    // Step 1: Initialize the DFA
+    const dfa = new DFA([], [], null, [], this.alphabet);
+    const dfaStates = new Map<string, State>();
+    const unmarkedStates: string[] = [];
+
+    // Step 2: Create the initial state of the DFA
+    this.initializeDFAStartState(dfa, dfaStates, unmarkedStates);
+
+    // Step 3: Process all unmarked states
+    this.processUnmarkedStates(dfa, dfaStates, unmarkedStates);
+
+    // Step 4: Optionally remove unreachable states
+    if (removeUnreachableStates) {
+      this.removeUnreachableStates(dfa);
+    }
+
+    return dfa;
   }
 
   /**
-   * Returns a unique key for a given set of states.
-   * @param states The set of states to generate a key for.
-   * @returns A string key representing the set of states.
+   * Initializes the start state of the DFA.
+   * @param dfa The DFA being constructed.
+   * @param dfaStates Map of DFA state keys to states.
+   * @param unmarkedStates List of unmarked DFA states.
    */
-  private stateSetKey(states: Set<State>): string {
-    return this.stateSetName(states);
+  private initializeDFAStartState(
+    dfa: DFA,
+    dfaStates: Map<string, State>,
+    unmarkedStates: string[],
+  ): void {
+    // Compute the epsilon closure of the NFA start state
+    const startStateClosure = this.epsilonClosure(new Set([this.startState!]));
+    const startStateKey = this.getStateSetKey(startStateClosure);
+
+    // Add the start state to the DFA
+    dfa.addState(startStateKey);
+    dfa.setStartState(startStateKey);
+    dfaStates.set(startStateKey, startStateKey);
+    unmarkedStates.push(startStateKey);
   }
 
   /**
-   * Computes the epsilon closure for a given state.
-   * The epsilon closure is the set of all states that can be reached
-   * from the given state via epsilon (ε) transitions.
-   * @param state The state for which to compute the epsilon closure.
-   * @returns A set of states representing the epsilon closure.
+   * Processes all unmarked states in the DFA.
+   * @param dfa The DFA being constructed.
+   * @param dfaStates Map of DFA state keys to states.
+   * @param unmarkedStates List of unmarked DFA states.
    */
-  private epsilonClosure(state: State): Set<State> {
-    const closure = new Set([state]);
-    const stack = [state];
+  private processUnmarkedStates(
+    dfa: DFA,
+    dfaStates: Map<string, State>,
+    unmarkedStates: string[],
+  ): void {
+    while (unmarkedStates.length > 0) {
+      const currentStateKey = unmarkedStates.pop()!;
+      const currentStates = this.getStatesFromKey(currentStateKey);
+
+      // Process each symbol in the alphabet
+      for (const symbol of this.alphabet) {
+        if (symbol === "ε") continue; // Skip epsilon transitions
+
+        // Compute the next state set
+        const nextStates = this.epsilonClosure(
+          this.move(currentStates, symbol),
+        );
+        const nextStateKey = this.getStateSetKey(nextStates);
+
+        // Add new state to DFA if it doesn't exist
+        this.addNewStateToDFA(dfa, dfaStates, unmarkedStates, nextStateKey);
+
+        // Add transition to DFA
+        dfa.addTransition({
+          from: currentStateKey,
+          to: nextStateKey,
+          symbol,
+        });
+      }
+
+      // Mark accept states
+      this.markAcceptStates(dfa, currentStates, currentStateKey);
+    }
+  }
+
+  /**
+   * Adds a new state to the DFA if it doesn't already exist.
+   * @param dfa The DFA being constructed.
+   * @param dfaStates Map of DFA state keys to states.
+   * @param unmarkedStates List of unmarked DFA states.
+   * @param stateKey The key of the state to add.
+   */
+  private addNewStateToDFA(
+    dfa: DFA,
+    dfaStates: Map<string, State>,
+    unmarkedStates: string[],
+    stateKey: string,
+  ): void {
+    if (!dfaStates.has(stateKey)) {
+      dfa.addState(stateKey);
+      dfaStates.set(stateKey, stateKey);
+      unmarkedStates.push(stateKey);
+    }
+  }
+
+  /**
+   * Marks accept states in the DFA.
+   * @param dfa The DFA being constructed.
+   * @param currentStates The current set of NFA states.
+   * @param currentStateKey The key of the current DFA state.
+   */
+  private markAcceptStates(
+    dfa: DFA,
+    currentStates: Set<State>,
+    currentStateKey: string,
+  ): void {
+    if ([...currentStates].some((state) => this.acceptStates.includes(state))) {
+      dfa.addAcceptState([currentStateKey]);
+    }
+  }
+
+  /**
+   * Computes the epsilon closure for a given set of states.
+   * @param states The set of states to start from.
+   * @returns A set of states reachable through epsilon transitions.
+   */
+  private epsilonClosure(states: Set<State>): Set<State> {
+    const closure = new Set(states);
+    const stack = [...states];
 
     while (stack.length > 0) {
-      const s = stack.pop()!;
-      this.transitions.forEach((transition) => {
+      const state = stack.pop()!;
+      for (const transition of this.transitions) {
         if (
-          transition.from === s &&
+          transition.from === state &&
           transition.symbol === "ε" &&
           !closure.has(transition.to)
         ) {
           closure.add(transition.to);
           stack.push(transition.to);
         }
-      });
+      }
     }
 
     return closure;
   }
 
   /**
-   * Computes the set of states that can be reached from a given set of states
-   * by consuming a specific input symbol.
+   * Computes the set of states reachable from a given set of states by a given symbol.
    * @param states The set of states to start from.
-   * @param symbol The input symbol to consume.
-   * @returns A set of states that can be reached by the input symbol.
+   * @param symbol The transition symbol.
+   * @returns A set of states reachable by the given symbol.
    */
   private move(states: Set<State>, symbol: string): Set<State> {
     const result = new Set<State>();
-    states.forEach((state) => {
-      this.transitions.forEach((transition) => {
+    for (const state of states) {
+      for (const transition of this.transitions) {
         if (transition.from === state && transition.symbol === symbol) {
           result.add(transition.to);
         }
-      });
-    });
+      }
+    }
     return result;
   }
 
   /**
-   * Computes the start state and its epsilon closure for the DFA conversion.
-   * This method initializes the start state for the resulting DFA.
-   * @returns An object containing the initial state set and the corresponding DFA start state.
+   * Generates a unique key for a set of states.
+   * @param states The set of states.
+   * @returns A string key representing the set of states.
    */
-  private getDFAStartState(): { startState: Set<State>; dfaStartState: State } {
-    const startState = this.epsilonClosure(this.startState!);
-    const dfaStartState = this.stateSetName(startState);
-    return { startState, dfaStartState };
+  private getStateSetKey(states: Set<State>): string {
+    return [...states].sort().join(",") || "∅";
   }
 
   /**
-   * Constructs the transitions for the resulting DFA from the current NFA.
-   * This method iterates over unmarked states, processes transitions, and
-   * populates the DFA with the corresponding states and transitions.
-   * @param dfa The DFA being constructed.
-   * @param dfaStates A map of DFA states corresponding to sets of NFA states.
-   * @param unmarkedStates A stack of unmarked state sets to be processed.
+   * Retrieves the set of states from a state set key.
+   * @param key The state set key.
+   * @returns A set of states represented by the key.
    */
-  private buildDFATransitions(
-    dfa: DFA,
-    dfaStates: Map<string, State>,
-    unmarkedStates: Set<State>[],
-  ): void {
-    const symbols = new Set(this.transitions.map((t) => t.symbol));
-    symbols.delete("ε"); // Remove epsilon
-
-    while (unmarkedStates.length > 0) {
-      const currentStates = unmarkedStates.pop()!;
-      const currentDfaState = dfaStates.get(this.stateSetKey(currentStates))!;
-
-      symbols.forEach((symbol) => {
-        const moveResult = this.move(currentStates, symbol);
-        const epsilonClosure = this.getEpsilonClosureForMove(moveResult);
-
-        const key = this.stateSetKey(epsilonClosure);
-        let toState: State;
-
-        if (epsilonClosure.size > 0) {
-          if (!dfaStates.has(key)) {
-            const newState = this.stateSetName(epsilonClosure);
-            dfaStates.set(key, newState);
-            dfa.addState(newState); // Ensure state is added to DFA states
-            unmarkedStates.push(epsilonClosure);
-          }
-          toState = dfaStates.get(key)!;
-        } else {
-          toState = dfa.emptyState;
-          if (!dfa.states.includes(dfa.emptyState)) {
-            dfa.addState(dfa.emptyState);
-          }
-        }
-
-        dfa.addTransition({ from: currentDfaState, to: toState, symbol });
-      });
-
-      this.markAcceptStates(currentStates, dfa, currentDfaState);
-    }
+  private getStatesFromKey(key: string): Set<State> {
+    return new Set(key === "∅" ? [] : key.split(","));
   }
 
   /**
-   * Computes the epsilon closure for a given set of states after moving via a symbol.
-   * This method is used during DFA construction to determine the resulting set of states.
-   * @param moveResult The set of states reached by a move operation.
-   * @returns A set of states representing the epsilon closure after the move.
+   * Removes unreachable states from the DFA.
+   * @param dfa The DFA to remove unreachable states from.
    */
-  private getEpsilonClosureForMove(moveResult: Set<State>): Set<State> {
-    const epsilonClosure = new Set<State>();
-    moveResult.forEach((state) => {
-      this.epsilonClosure(state).forEach((s) => epsilonClosure.add(s));
-    });
-    return epsilonClosure;
-  }
-
-  /**
-   * Marks a DFA state as an accept state if any of the corresponding NFA states are accept states.
-   * @param currentStates The set of NFA states corresponding to the current DFA state.
-   * @param dfa The DFA being constructed.
-   * @param currentDfaState The current DFA state being processed.
-   */
-  private markAcceptStates(
-    currentStates: Set<State>,
-    dfa: DFA,
-    currentDfaState: State,
-  ): void {
-    const isAcceptState = [...currentStates].some((state) =>
-      this.acceptStates.includes(state),
-    );
-    if (isAcceptState) {
-      dfa.addAcceptState([currentDfaState]);
-    }
-  }
-
-  /**
-   * Adds transitions to the empty state for any missing symbols in the DFA.
-   * This ensures that the DFA has a complete set of transitions for all symbols in the alphabet.
-   * @param dfa The DFA being constructed.
-   * @param symbols The set of symbols in the alphabet.
-   */
-  private addMissingTransitions(dfa: DFA, symbols: Set<string>): void {
-    dfa.states.forEach((dfaState) => {
-      symbols.forEach((symbol) => {
-        const transitionExists = dfa.transitions.some(
-          (t) => t.from === dfaState && t.symbol === symbol,
-        );
-        if (!transitionExists) {
-          dfa.addTransition({ from: dfaState, to: dfa.emptyState, symbol });
-        }
-      });
-    });
-  }
-
-  /**
-   * Removes states from a DFA that cannot be reached from the start state.
-   * This process can be used to simplify the DFA after conversion from an NFA.
-   * @param dfa The DFA to simplify.
-   */
-  private removeUnreachableStates(dfa: DFA) {
+  private removeUnreachableStates(dfa: DFA): void {
     const reachableStates = new Set<State>();
-    const stack = [dfa.startState!];
+    const stack: State[] = [dfa.startState!];
 
+    // Find all reachable states
     while (stack.length > 0) {
-      const state = stack.pop()!;
-      if (!reachableStates.has(state)) {
-        reachableStates.add(state);
-        dfa.transitions.forEach((transition) => {
+      const currentState = stack.pop()!;
+      if (!reachableStates.has(currentState)) {
+        reachableStates.add(currentState);
+        for (const transition of dfa.transitions) {
           if (
-            transition.from === state &&
+            transition.from === currentState &&
             !reachableStates.has(transition.to)
           ) {
             stack.push(transition.to);
           }
-        });
+        }
       }
     }
 
+    // Remove unreachable states and their associated transitions
     dfa.states = dfa.states.filter((state) => reachableStates.has(state));
     dfa.transitions = dfa.transitions.filter(
       (transition) =>
@@ -244,66 +248,6 @@ export default class NFA extends FSA {
     dfa.acceptStates = dfa.acceptStates.filter((state) =>
       reachableStates.has(state),
     );
-  }
-
-  /**
-   * Generates all subsets (power set) of an array of elements.
-   * @param arr The array to generate subsets from.
-   * @returns An array of all possible subsets.
-   */
-  private powerSet<T>(arr: T[]): T[][] {
-    return arr.reduce(
-      (subsets, value) => subsets.concat(subsets.map((set) => [...set, value])),
-      [[]] as T[][],
-    );
-  }
-
-  /**
-   * Converts this NFA to an equivalent DFA using the subset construction method.
-   * This process may include the removal of unreachable states if specified.
-   * @param removeUnreachableStates Whether to remove unreachable states in the resulting DFA.
-   * @returns The equivalent DFA.
-   */
-  toDFA(removeUnreachableStates: boolean = false): DFA {
-    const dfa = new DFA([], [], null, [], this.alphabet);
-    const dfaStates = new Map<string, State>();
-    const unmarkedStates: Set<State>[] = [];
-
-    // Determine the DFA start state and its epsilon closure
-    const { startState, dfaStartState } = this.getDFAStartState();
-    dfa.addState(dfaStartState);
-    dfa.setStartState(dfaStartState);
-    dfaStates.set(this.stateSetKey(startState), dfaStartState);
-    unmarkedStates.push(startState);
-
-    // Generate all possible state sets
-    const allStateSets = this.powerSet(this.states).map((set) => new Set(set));
-
-    // Create DFA states for all state sets
-    allStateSets.forEach((stateSet) => {
-      const key = this.stateSetKey(stateSet);
-      if (!dfaStates.has(key)) {
-        const newState = this.stateSetName(stateSet);
-        dfaStates.set(key, newState);
-        dfa.addState(newState);
-        unmarkedStates.push(stateSet);
-      }
-    });
-
-    // Build the DFA transitions
-    this.buildDFATransitions(dfa, dfaStates, unmarkedStates);
-
-    // Add transitions to the empty state for missing symbols
-    const symbols = new Set(this.transitions.map((t) => t.symbol));
-    symbols.delete("ε"); // Remove epsilon
-    this.addMissingTransitions(dfa, symbols);
-
-    // Remove unreachable states if specified
-    if (removeUnreachableStates) {
-      this.removeUnreachableStates(dfa);
-    }
-
-    return dfa;
   }
 
   /**

@@ -11,8 +11,8 @@ describe("NFA class", () => {
 
       expect(dfa.states).toHaveLength(1);
       expect(dfa.states[0]).toBe(stateQ0);
-      expect(dfa.startState).toBe(dfa.states[0]);
-      expect(dfa.acceptStates).toEqual(dfa.states);
+      expect(dfa.startState).toBe(stateQ0);
+      expect(dfa.acceptStates).toEqual([stateQ0]);
       expect(dfa.transitions).toHaveLength(0);
     });
 
@@ -40,7 +40,7 @@ describe("NFA class", () => {
       expect(dfa.states).toHaveLength(1);
       expect(dfa.states[0]).toBe("q0,q1,q2");
       expect(dfa.startState).toBe("q0,q1,q2");
-      expect(dfa.acceptStates).toEqual(dfa.states);
+      expect(dfa.acceptStates).toEqual(["q0,q1,q2"]);
       expect(dfa.transitions).toHaveLength(0);
     });
 
@@ -67,12 +67,10 @@ describe("NFA class", () => {
       );
 
       const dfa = nfa.toDFA(true);
-      expect(dfa.states.length).toBeGreaterThan(0);
-      expect(dfa.startState!).toBe(stateQ0);
-      expect(
-        dfa.acceptStates.some((state) => state.includes("q2")),
-      ).toBeTruthy();
-      expect(dfa.transitions.length).toBeGreaterThan(0);
+      expect(dfa.states).toHaveLength(4);
+      expect(dfa.startState).toBe("q0");
+      expect(dfa.acceptStates).toContain("q2");
+      expect(dfa.transitions).toHaveLength(8);
     });
 
     test("should remove unreachable states in DFA", () => {
@@ -103,13 +101,9 @@ describe("NFA class", () => {
 
       const dfa = nfa.toDFA(true);
 
-      expect(dfa.states).not.toContainEqual(
-        expect.objectContaining({ name: stateQ3 }),
-      );
+      expect(dfa.states).not.toContain(stateQ3);
       expect(dfa.transitions).not.toContainEqual(
-        expect.objectContaining({
-          from: expect.objectContaining({ name: stateQ3 }),
-        }),
+        expect.objectContaining({ from: stateQ3 }),
       );
     });
   });
@@ -134,7 +128,7 @@ describe("NFA class", () => {
         alphabet,
       );
 
-      const closure = nfa["epsilonClosure"](stateQ0);
+      const closure = nfa["epsilonClosure"](new Set([stateQ0]));
       expect(closure.size).toBe(3);
       expect(closure.has(stateQ0)).toBeTruthy();
       expect(closure.has(stateQ1)).toBeTruthy();

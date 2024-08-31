@@ -39,17 +39,16 @@ class DFA extends FSA {
 
 class NFA extends FSA {
   + NFA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
-  - stateSetName(states: Set<State>): string
-  - stateSetKey(states: Set<State>): string
-  - epsilonClosure(state: State): Set<State>
+  + toDFA(removeUnreachableStates: boolean): DFA
+  - initializeDFAStartState(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: string[]): void
+  - processUnmarkedStates(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: string[]): void
+  - addNewStateToDFA(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: string[], stateKey: string): void
+  - markAcceptStates(dfa: DFA, currentStates: Set<State>, currentStateKey: string): void
+  - epsilonClosure(states: Set<State>): Set<State>
   - move(states: Set<State>, symbol: string): Set<State>
-  - getDFAStartState(): { startState: Set<State>; dfaStartState: State }
-  - buildDFATransitions(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: Set<State>[]): void
-  - getEpsilonClosureForMove(moveResult: Set<State>): Set<State>
-  - markAcceptStates(currentStates: Set<State>, dfa: DFA, currentDfaState: State): void
-  - addMissingTransitions(dfa: DFA, symbols: Set<string>): void
+  - getStateSetKey(states: Set<State>): string
+  - getStatesFromKey(key: string): Set<State>
   - removeUnreachableStates(dfa: DFA): void
-  + toDFA(removeUnreachableStates: boolean = false): DFA
   + static fromJSON(json: FSAJSON): NFA
 }
 
@@ -64,9 +63,6 @@ class ValidationError {
 }
 
 
-FSA <|-- DFA
-FSA <|-- NFA
-FSA ..|> IFSA
 FSA ..> ValidationError
 DFA ..> ValidationError
 NFA ..> ValidationError
