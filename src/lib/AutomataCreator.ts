@@ -12,14 +12,19 @@ class AutomataCreator {
   }
 
   private static isDFA(json: FSAJSON): boolean {
-    const symbolCounts = new Map<string, number>();
+    const transitionMap = new Map<string, Set<string>>();
+
     for (const transition of json.transitions) {
+      if (transition.symbol === "ε") return false;
+
       const key = `${transition.from}-${transition.symbol}`;
-      symbolCounts.set(key, (symbolCounts.get(key) || 0) + 1);
+      if (transitionMap.has(key)) return false;
+
+      transitionMap.set(key, new Set([transition.to]));
     }
-    return (
-      Array.from(symbolCounts.values()).every((count) => count === 1) &&
-      !json.transitions.some((t) => t.symbol === "ε")
+
+    return json.states.every((state) =>
+      json.alphabet.every((symbol) => transitionMap.has(`${state}-${symbol}`)),
     );
   }
 }
