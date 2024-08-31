@@ -1,64 +1,61 @@
 @startuml architecture
 
-class FSA {
+interface IFSA {
+  + State[] states
+  + Transition[] transitions
+  + State startState
+  + State[] acceptStates
+  + Alphabet alphabet
+  + addState(state: State): void
+  + addTransition(transition: Transition): void
+  + setStartState(state: State): void
+  + addAcceptState(states: State[]): void
+  + toJSON(): FSAJSON
+}
+
+class FSA implements IFSA {
   - State[] states
   - Transition[] transitions
   - State startState
   - State[] acceptStates
   - Alphabet alphabet
   + FSA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
-  + validateTransitions(transitions: Transition[], alphabet: Alphabet)
-  + addState(state: State)
-  + addTransition(transition: Transition)
-  + setStartState(state: State)
-  + addAcceptState(states: State[])
+  - validateTransitions(transitions: Transition[], alphabet: Alphabet): void
+  + addState(state: State): void
+  + addTransition(transition: Transition): void
+  + setStartState(state: State): void
+  + addAcceptState(states: State[]): void
   + toJSON(): FSAJSON
   + static fromJSON(json: FSAJSON): FSA
 }
 
-class DFA {
+class DFA extends FSA {
   - State emptyState
   + DFA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
-  + validateDFA()
-  + addTransition(transition: Transition)
+  - validateDFA(): void
+  + addTransition(transition: Transition): void
   + static fromJSON(json: FSAJSON): DFA
 }
 
-class NFA {
+class NFA extends FSA {
   + NFA(states: State[], transitions: Transition[], startState: State, acceptStates: State[], alphabet: Alphabet)
-  + stateSetName(states: Set<State>): string
-  + stateSetKey(states: Set<State>): string
-  + epsilonClosure(state: State): Set<State>
-  + move(states: Set<State>, symbol: string): Set<State>
-  + getDFAStartState(): { startState: Set<State>; dfaStartState: State }
-  + buildDFATransitions(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: Set<State>[]): void
-  + getEpsilonClosureForMove(moveResult: Set<State>): Set<State>
-  + markAcceptStates(currentStates: Set<State>, dfa: DFA, currentDfaState: State): void
-  + addMissingTransitions(dfa: DFA, symbols: Set<string>): void
-  + removeUnreachableStates(dfa: DFA)
+  - stateSetName(states: Set<State>): string
+  - stateSetKey(states: Set<State>): string
+  - epsilonClosure(state: State): Set<State>
+  - move(states: Set<State>, symbol: string): Set<State>
+  - getDFAStartState(): { startState: Set<State>; dfaStartState: State }
+  - buildDFATransitions(dfa: DFA, dfaStates: Map<string, State>, unmarkedStates: Set<State>[]): void
+  - getEpsilonClosureForMove(moveResult: Set<State>): Set<State>
+  - markAcceptStates(currentStates: Set<State>, dfa: DFA, currentDfaState: State): void
+  - addMissingTransitions(dfa: DFA, symbols: Set<string>): void
+  - removeUnreachableStates(dfa: DFA): void
   + toDFA(removeUnreachableStates: boolean = false): DFA
   + static fromJSON(json: FSAJSON): NFA
 }
 
-class State {
-  - string name
-  + State(name: string)
-}
-
-class Transition {
-  - State from
-  - State to
-  - string symbol
-  + Transition(from: State, to: State, symbol: string)
-}
-
-class Alphabet {
-  - Set<string> symbols
-  + Alphabet(symbols: string[])
-  + addSymbol(symbol: string)
-  + removeSymbol(symbol: string)
-  + hasSymbol(symbol: string): boolean
-  + getSymbols(): string[]
+class AutomataCreator {
+  + static createFromJSON(json: FSAJSON): IFSA
+  - static isDFA(json: FSAJSON): boolean
 }
 
 class ValidationError {
@@ -66,15 +63,15 @@ class ValidationError {
   + ValidationError(message: string)
 }
 
+
 FSA <|-- DFA
 FSA <|-- NFA
-DFA o-- State
-DFA o-- Transition
-DFA o-- Alphabet
-NFA o-- State
-NFA o-- Transition
-NFA o-- Alphabet
-Transition *-- State
+FSA ..|> IFSA
 FSA ..> ValidationError
 DFA ..> ValidationError
+NFA ..> ValidationError
+AutomataCreator ..> IFSA
+AutomataCreator ..> DFA
+AutomataCreator ..> NFA
+
 @enduml
