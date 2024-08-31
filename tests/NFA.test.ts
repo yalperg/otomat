@@ -1,5 +1,5 @@
-import NFA from "../models/NFA";
-import { State, Transition, Alphabet } from "../types";
+import NFA from "../src/lib/NFA";
+import { State, Transition, Alphabet } from "../src/types";
 
 describe("NFA class", () => {
   describe("toDFA method", () => {

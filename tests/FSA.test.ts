@@ -1,6 +1,6 @@
-import FSA from "../models/FSA";
-import { ValidationError } from "../errors";
-import { State, Transition, Alphabet, FSAJSON } from "../types";
+import FSA from "../src/lib/FSA";
+import { ValidationError } from "../src/errors";
+import { State, Transition, Alphabet, FSAJSON } from "../src/types";
 
 describe("FSA class", () => {
   const alphabet: Alphabet = ["a", "b"];

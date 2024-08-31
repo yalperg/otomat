@@ -1,10 +1,9 @@
-import { IFiniteStateAutomaton } from "../interfaces/IFiniteStateAutomaton";
-import DFA from "../models/DFA";
-import NFA from "../models/NFA";
-import type { FSAJSON } from "../types";
+import DFA from "./DFA";
+import NFA from "./NFA";
+import type { FSAJSON, IFSA } from "../types";
 
-export class AutomatonFactory {
-  static createFromJSON(json: FSAJSON): IFiniteStateAutomaton {
+class AutomataCreator {
+  static createFromJSON(json: FSAJSON): IFSA {
     if (this.isDFA(json)) {
       return DFA.fromJSON(json);
     } else {
@@ -24,3 +23,5 @@ export class AutomatonFactory {
     );
   }
 }
+
+export default AutomataCreator;

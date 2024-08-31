@@ -1,10 +1,6 @@
-export { default as State } from "./models/State";
-export { default as Transition } from "./models/Transition";
-export { default as Alphabet } from "./models/Alphabet";
-export { default as FSA } from "./models/FSA";
-export { default as DFA } from "./models/DFA";
-export { default as NFA } from "./models/NFA";
-export { ValidationError, StateError, TransitionError } from "./errors";
-export { AutomatonFactory } from "./factories/AutomatonFactory";
-export type { FSAJSON } from "./types";
-export type { IFiniteStateAutomaton } from "./interfaces/IFiniteStateAutomaton";
+export { default as FSA } from "./lib/FSA";
+export { default as DFA } from "./lib/DFA";
+export { default as NFA } from "./lib/NFA";
+export { default as AutomataCreator } from "./lib/AutomataCreator";
+export * from "./errors";
+export type * from "./types";

@@ -1,6 +1,6 @@
-import DFA from "../models/DFA";
-import { ValidationError } from "../errors";
-import { Alphabet, State, Transition, FSAJSON } from "../types";
+import DFA from "../src/lib/DFA";
+import { ValidationError } from "../src/errors";
+import { Alphabet, State, Transition, FSAJSON } from "../src/types";
 
 describe("DFA class", () => {
   const alphabet: Alphabet = ["a", "b"];

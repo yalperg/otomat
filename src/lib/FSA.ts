@@ -1,6 +1,5 @@
 import { ValidationError } from "../errors";
-import { IFiniteStateAutomaton } from "../interfaces/IFiniteStateAutomaton";
-import { Alphabet, FSAJSON, State, Transition } from "../types";
+import { Alphabet, FSAJSON, State, Transition, IFSA } from "../types";
 import { hasSymbol } from "../utils";
 
 /**
@@ -9,7 +8,7 @@ import { hasSymbol } from "../utils";
  * An FSA consists of a set of states, transitions, a start state,
  * a set of accept states, and an alphabet of symbols.
  */
-export default class FSA implements IFiniteStateAutomaton {
+export default class FSA implements IFSA {
   states: State[];
   transitions: Transition[];
   startState: State | null;

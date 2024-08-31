@@ -12,17 +12,3 @@ export class ValidationError extends Error {
     this.name = "ValidationError";
   }
 }
-
-export class StateError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StateError";
-  }
-}
-
-export class TransitionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TransitionError";
-  }
-}
