@@ -1,6 +1,7 @@
-import { ValidationError } from "../errors";
+import { ValidationError } from "../utils";
 import { Alphabet, FSAJSON, State, Transition, IFSA } from "../types";
 import { hasSymbol } from "../utils";
+import { EPSILON_SYMBOL } from "../constants";
 
 /**
  * Represents a Finite State Automaton (FSA), which is the base class
@@ -57,7 +58,7 @@ export default class FSA implements IFSA {
     transitions.forEach((transition) => {
       if (
         !hasSymbol(alphabet, transition.symbol) &&
-        transition.symbol !== "ε"
+        transition.symbol !== EPSILON_SYMBOL
       ) {
         throw new ValidationError(
           `Symbol '${transition.symbol}' is not in the alphabet.`,
@@ -86,7 +87,7 @@ export default class FSA implements IFSA {
   addTransition(transition: Transition) {
     if (
       !hasSymbol(this.alphabet, transition.symbol) &&
-      transition.symbol !== "ε"
+      transition.symbol !== EPSILON_SYMBOL
     ) {
       throw new ValidationError(
         `Symbol '${transition.symbol}' is not in the alphabet.`,

@@ -1,6 +1,6 @@
-import AutomataCreator from "../src/lib/AutomataCreator";
-import DFA from "../src/lib/DFA";
-import NFA from "../src/lib/NFA";
+import AutomataCreator from "../src/core/AutomataCreator";
+import DFA from "../src/core/DFA";
+import NFA from "../src/core/NFA";
 import { FSAJSON } from "../src/types";
 
 describe("AutomataCreator", () => {

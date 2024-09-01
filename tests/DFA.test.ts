@@ -1,5 +1,5 @@
-import DFA from "../src/lib/DFA";
-import { ValidationError } from "../src/errors";
+import DFA from "../src/core/DFA";
+import { ValidationError } from "../src/utils";
 import { Alphabet, State, Transition, FSAJSON } from "../src/types";
 
 describe("DFA class", () => {

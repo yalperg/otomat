@@ -1,6 +1,7 @@
 import FSA from "./FSA";
-import { ValidationError } from "../errors";
+import { ValidationError } from "../utils";
 import type { Alphabet, FSAJSON, State, Transition } from "../types";
+import { EPSILON_SYMBOL } from "../constants";
 
 /**
  * Represents a Deterministic Finite Automaton (DFA).
@@ -8,8 +9,6 @@ import type { Alphabet, FSAJSON, State, Transition } from "../types";
  * there is exactly one transition to a next state.
  */
 export default class DFA extends FSA {
-  emptyState: State;
-
   /**
    * Creates a new DFA.
    * @param states The set of states in the automaton.
@@ -26,7 +25,6 @@ export default class DFA extends FSA {
     alphabet: Alphabet,
   ) {
     super(states, transitions, startState, acceptStates, alphabet);
-    this.emptyState = "∅";
     this.validateDFA();
   }
 
@@ -39,7 +37,7 @@ export default class DFA extends FSA {
     const transitionMap = new Map<string, State>();
 
     this.transitions.forEach((transition) => {
-      if (transition.symbol === "ε") {
+      if (transition.symbol === EPSILON_SYMBOL) {
         throw new ValidationError("DFA cannot have epsilon transitions.");
       }
 
@@ -60,7 +58,7 @@ export default class DFA extends FSA {
    * @throws ValidationError If the transition uses an epsilon symbol.
    */
   addTransition(transition: Transition) {
-    if (transition.symbol === "ε") {
+    if (transition.symbol === EPSILON_SYMBOL) {
       throw new ValidationError("DFA cannot have epsilon transitions.");
     }
     super.addTransition(transition);

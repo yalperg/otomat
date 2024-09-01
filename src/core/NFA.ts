@@ -1,6 +1,7 @@
 import FSA from "./FSA";
 import DFA from "./DFA";
 import type { Alphabet, FSAJSON, State, Transition } from "../types";
+import { EMPTY_STATE, EPSILON_SYMBOL } from "../constants";
 
 /**
  * Represents a Nondeterministic Finite Automaton (NFA).
@@ -30,10 +31,13 @@ export default class NFA extends FSA {
 
   /**
    * Converts the NFA to an equivalent DFA using the subset construction algorithm.
-   * @param removeUnreachableStates Optional flag to remove unreachable states from the resulting DFA.
    * @returns The equivalent DFA.
    */
-  toDFA(removeUnreachableStates: boolean = false): DFA {
+  toDFA(): DFA {
+    if (this.states.length === 0) {
+      return new DFA([], [], null, [], []);
+    }
+
     // Step 1: Initialize the DFA
     const dfa = new DFA([], [], null, [], this.alphabet);
     const dfaStates = new Map<string, State>();
@@ -44,11 +48,6 @@ export default class NFA extends FSA {
 
     // Step 3: Process all unmarked states
     this.processUnmarkedStates(dfa, dfaStates, unmarkedStates);
-
-    // Step 4: Optionally remove unreachable states
-    if (removeUnreachableStates) {
-      this.removeUnreachableStates(dfa);
-    }
 
     return dfa;
   }
@@ -92,7 +91,7 @@ export default class NFA extends FSA {
 
       // Process each symbol in the alphabet
       for (const symbol of this.alphabet) {
-        if (symbol === "ε") continue; // Skip epsilon transitions
+        if (symbol === EPSILON_SYMBOL) continue; // Skip epsilon transitions
 
         // Compute the next state set
         const nextStates = this.epsilonClosure(
@@ -166,7 +165,7 @@ export default class NFA extends FSA {
       for (const transition of this.transitions) {
         if (
           transition.from === state &&
-          transition.symbol === "ε" &&
+          transition.symbol === EPSILON_SYMBOL &&
           !closure.has(transition.to)
         ) {
           closure.add(transition.to);
@@ -202,7 +201,7 @@ export default class NFA extends FSA {
    * @returns A string key representing the set of states.
    */
   private getStateSetKey(states: Set<State>): string {
-    return [...states].sort().join(",") || "∅";
+    return [...states].sort().join(",") || EMPTY_STATE;
   }
 
   /**
@@ -211,43 +210,7 @@ export default class NFA extends FSA {
    * @returns A set of states represented by the key.
    */
   private getStatesFromKey(key: string): Set<State> {
-    return new Set(key === "∅" ? [] : key.split(","));
-  }
-
-  /**
-   * Removes unreachable states from the DFA.
-   * @param dfa The DFA to remove unreachable states from.
-   */
-  private removeUnreachableStates(dfa: DFA): void {
-    const reachableStates = new Set<State>();
-    const stack: State[] = [dfa.startState!];
-
-    // Find all reachable states
-    while (stack.length > 0) {
-      const currentState = stack.pop()!;
-      if (!reachableStates.has(currentState)) {
-        reachableStates.add(currentState);
-        for (const transition of dfa.transitions) {
-          if (
-            transition.from === currentState &&
-            !reachableStates.has(transition.to)
-          ) {
-            stack.push(transition.to);
-          }
-        }
-      }
-    }
-
-    // Remove unreachable states and their associated transitions
-    dfa.states = dfa.states.filter((state) => reachableStates.has(state));
-    dfa.transitions = dfa.transitions.filter(
-      (transition) =>
-        reachableStates.has(transition.from) &&
-        reachableStates.has(transition.to),
-    );
-    dfa.acceptStates = dfa.acceptStates.filter((state) =>
-      reachableStates.has(state),
-    );
+    return new Set(key === EMPTY_STATE ? [] : key.split(","));
   }
 
   /**

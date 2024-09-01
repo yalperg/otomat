@@ -1,4 +1,4 @@
-import NFA from "../src/lib/NFA";
+import NFA from "../src/core/NFA";
 import { State, Transition, Alphabet } from "../src/types";
 
 describe("NFA class", () => {

@@ -1,5 +1,5 @@
-import FSA from "../src/lib/FSA";
-import { ValidationError } from "../src/errors";
+import FSA from "../src/core/FSA";
+import { ValidationError } from "../src/utils";
 import { State, Transition, Alphabet, FSAJSON } from "../src/types";
 
 describe("FSA class", () => {

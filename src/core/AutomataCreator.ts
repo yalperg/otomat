@@ -1,6 +1,7 @@
 import DFA from "./DFA";
 import NFA from "./NFA";
 import type { FSAJSON, IFSA } from "../types";
+import { EPSILON_SYMBOL } from "../constants";
 
 class AutomataCreator {
   static createFromJSON(json: FSAJSON): IFSA {
@@ -15,7 +16,7 @@ class AutomataCreator {
     const transitionMap = new Map<string, Set<string>>();
 
     for (const transition of json.transitions) {
-      if (transition.symbol === "ε") return false;
+      if (transition.symbol === EPSILON_SYMBOL) return false;
 
       const key = `${transition.from}-${transition.symbol}`;
       if (transitionMap.has(key)) return false;
