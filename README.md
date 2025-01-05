@@ -2,15 +2,6 @@
 
 **Otomat** is a TypeScript library for working with Finite State Automata (FSA), specifically for converting Non-deterministic Finite Automata (NFA) to Deterministic Finite Automata (DFA).
 
-## Installation
-
-To install the library, use npm or yarn:
-
-```bash
-npm install otomat
-pnpm add otomat
-```
-
 ## Usage
 
 Here’s a basic example of how to create an NFA, convert it to a DFA, and interact with the automaton:
