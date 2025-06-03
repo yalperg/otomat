@@ -75,4 +75,16 @@ describe('Automaton', () => {
     const bad = { ...configDFA, alphabet: [] };
     expect(() => new Automaton(bad)).toThrow(InvalidAutomatonError);
   });
+
+  it('equals() returns true for identical automata', () => {
+    const a1 = new Automaton(configDFA);
+    const a2 = new Automaton(configDFA);
+    expect(a1.equals(a2)).toBe(true);
+  });
+
+  it('equals() returns false for different automata', () => {
+    const a1 = new Automaton(configDFA);
+    const a2 = new Automaton(configNFA);
+    expect(a1.equals(a2)).toBe(false);
+  });
 });
