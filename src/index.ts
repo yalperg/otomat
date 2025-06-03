@@ -1,5 +1,2 @@
-function main(): void {
-  console.log('Otomat');
-}
-
-main();
+export { default as Automaton } from './models/automaton';
+export { default as Transition } from './models/transition';
