@@ -50,7 +50,6 @@ describe('Transition', () => {
     expect(t.isDeterministic()).toBe(false);
   });
 
-
   it('throws for empty from', () => {
     expect(() => Transition.create('', 'a', ['q1'])).toThrow(
       InvalidAutomatonError,
@@ -75,5 +74,10 @@ describe('Transition', () => {
     expect(t.from).toBe('q@');
     expect(t.input).toBe('!');
     expect(t.to).toEqual(['q$', 'q#']);
+  });
+
+  it('toString() returns correct format', () => {
+    const t = Transition.create('q0', 'a', ['q1', 'q2']);
+    expect(t.toString()).toBe('q0 --a--> [q1, q2]');
   });
 });

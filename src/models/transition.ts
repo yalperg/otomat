@@ -6,7 +6,7 @@ export type TransitionData = {
   from: string;
   input: string;
   to: string[];
-}
+};
 
 export default class Transition {
   public readonly from: string;
@@ -60,5 +60,13 @@ export default class Transition {
       this.to.length === other.to.length &&
       this.to.every((v, i) => v === other.to[i])
     );
+  }
+
+  /**
+   * String representation of the transition.
+   * @returns {string} The transition in the format "from --input--> [to1, to2, ...]"
+   */
+  toString(): string {
+    return `${this.from} --${this.input}--> [${this.to.join(', ')}]`;
   }
 }
