@@ -27,12 +27,9 @@ export default class SimulationEngine {
     );
     const nextStates = new Set<string>();
     for (const state of states) {
-      for (const t of automaton.transitions) {
-        if (t.from === state && t.input === inputSymbol) {
-          for (const toState of t.to) {
-            nextStates.add(toState);
-          }
-        }
+      const toStates = automaton.getTransitions(state, inputSymbol);
+      for (const toState of toStates) {
+        nextStates.add(toState);
       }
     }
     // Compute epsilon closure after consuming input
@@ -162,9 +159,12 @@ export default class SimulationEngine {
       currentStates,
     );
     for (const state of closure) {
-      for (const t of automaton.transitions) {
-        if (t.from === state && t.input === inputSymbol) {
-          result.push(t);
+      const toStates = automaton.getTransitions(state, inputSymbol);
+      if (toStates.length > 0) {
+        for (const t of automaton.transitions) {
+          if (t.from === state && t.input === inputSymbol) {
+            result.push(t);
+          }
         }
       }
     }

@@ -87,10 +87,9 @@ export default class NFAToDFAConverter {
       for (const symbol of nfa.alphabet) {
         let nextStates = new Set<string>();
         for (const state of current) {
-          for (const t of nfa.transitions) {
-            if (t.from === state && t.input === symbol) {
-              t.to.forEach((s) => nextStates.add(s));
-            }
+          const toStates = nfa.getTransitions(state, symbol);
+          for (const s of toStates) {
+            nextStates.add(s);
           }
         }
         nextStates = SimulationEngine.computeEpsilonClosure(nfa, nextStates);
@@ -155,10 +154,9 @@ export default class NFAToDFAConverter {
         // Epsilon closure of all reachable states after consuming symbol
         let nextStates = new Set<string>();
         for (const state of current) {
-          for (const t of nfa.transitions) {
-            if (t.from === state && t.input === symbol) {
-              t.to.forEach((s) => nextStates.add(s));
-            }
+          const toStates = nfa.getTransitions(state, symbol);
+          for (const s of toStates) {
+            nextStates.add(s);
           }
         }
         // Epsilon closure of nextStates
@@ -189,10 +187,9 @@ export default class NFAToDFAConverter {
         // Epsilon closure of all reachable states after consuming symbol
         let nextStates = new Set<string>();
         for (const state of subset) {
-          for (const t of nfa.transitions) {
-            if (t.from === state && t.input === symbol) {
-              t.to.forEach((s) => nextStates.add(s));
-            }
+          const toStates = nfa.getTransitions(state, symbol);
+          for (const s of toStates) {
+            nextStates.add(s);
           }
         }
         // Epsilon closure of nextStates
