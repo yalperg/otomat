@@ -25,3 +25,13 @@ export class InvalidAutomatonError extends AutomataError {
     this.name = 'InvalidAutomatonError';
   }
 }
+
+/**
+ * Error thrown for simulation failures or invalid simulation input.
+ */
+export class SimulationError extends AutomataError {
+  constructor(message: string, cause?: Error) {
+    super(message, cause);
+    this.name = 'SimulationError';
+  }
+}
