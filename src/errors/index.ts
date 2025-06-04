@@ -35,3 +35,13 @@ export class SimulationError extends AutomataError {
     this.name = 'SimulationError';
   }
 }
+
+/**
+ * Error thrown for NFA to DFA conversion failures.
+ */
+export class ConversionError extends AutomataError {
+  constructor(message: string, cause?: Error) {
+    super(message, cause);
+    this.name = 'ConversionError';
+  }
+}
