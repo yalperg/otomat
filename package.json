@@ -20,15 +20,17 @@
   "scripts": {
     "build": "rm -rf ./dist && node esbuild.config.js",
     "dev": "rm -rf ./dist && NODE_ENV=development node esbuild.config.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "jest --testPathIgnorePatterns='perf'",
+    "test:watch": "jest --watch --testPathIgnorePatterns='perf'",
+    "test:coverage": "jest --coverage --testPathIgnorePatterns='perf'",
+    "test:perf": "DFA_SIM_THRESH=0.01 NFA2DFA_SIM_THRESH=13 LARGE_ALPHA_THRESH=8 jest '.*perf.*\\.test\\.ts$'"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.29",
     "esbuild": "^0.25.5",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",

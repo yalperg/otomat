@@ -13,7 +13,6 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "incremental": true,
     "baseUrl": ".",
