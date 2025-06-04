@@ -1,5 +1,5 @@
 import { Automaton } from '@/index';
-import { InvalidAutomatonError } from '../../src/errors/index';
+import { InvalidAutomatonError } from '@/errors/index';
 
 describe('Automaton', () => {
   const configDFA = {

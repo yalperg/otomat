@@ -1,5 +1,5 @@
 import Validator from '@/utils/validator';
-import Transition, { EPSILON, TransitionData } from './transition';
+import Transition, { EPSILON, TransitionData } from '@/models/transition';
 
 export type AutomatonConfig = {
   states: string[];
