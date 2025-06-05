@@ -62,15 +62,20 @@ export default class Automaton {
    * @throws {InvalidAutomatonError} If the automaton is not valid
    */
   equals(other: Automaton): boolean {
+    if (this.transitions.length !== other.transitions.length) {
+      return false;
+    }
+
+    const transitionsMatch = this.transitions.every((t) =>
+      other.transitions.some((o) => t.equals(o)),
+    );
+
     return (
       this.setsEqual(this.states, other.states) &&
       this.setsEqual(this.alphabet, other.alphabet) &&
       this.setsEqual(this.startStates, other.startStates) &&
       this.setsEqual(this.acceptStates, other.acceptStates) &&
-      this.transitions.length === other.transitions.length &&
-      this.transitions.every((t, i) => {
-        return other.transitions[i] && t.equals(other.transitions[i]);
-      })
+      transitionsMatch
     );
   }
 

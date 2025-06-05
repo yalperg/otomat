@@ -54,11 +54,17 @@ export default class Transition {
    * @returns {boolean} True if equal, false otherwise
    */
   equals(other: Transition): boolean {
+    if (this.from !== other.from || this.input !== other.input) {
+      return false;
+    }
+
+    if (this.to.length !== other.to.length) {
+      return false;
+    }
+
     return (
-      this.from === other.from &&
-      this.input === other.input &&
-      this.to.length === other.to.length &&
-      this.to.every((v, i) => v === other.to[i])
+      this.to.every((state) => other.to.includes(state)) &&
+      other.to.every((state) => this.to.includes(state))
     );
   }
 
