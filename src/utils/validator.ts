@@ -187,7 +187,7 @@ export default class Validator {
    * @returns {boolean} True if t is a Transition.
    */
   private static isTransition(t: unknown): t is TransitionData {
-    // TODO: Implement a more robust type guard, WFT is this doing?
+    // TODO: Implement a more robust type guard
     if (
       typeof t !== 'object' ||
       t === null ||

@@ -101,7 +101,7 @@ export default class Automaton {
   }
 
   /**
-   * Chgeck if two sets are equal.
+   * Check if two sets are equal.
    * Two sets are equal if they have the same size and contain the same elements.
    * @param a First set
    * @param b Second set
