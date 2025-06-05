@@ -175,20 +175,20 @@ export default class SimulationEngine {
 /**
  * Represents a single step in a simulation.
  */
-interface SimulationStep {
+type SimulationStep = {
   currentStates: string[];
   inputSymbol?: string | undefined;
   transition?: Transition | undefined;
-}
+};
 
 /**
  * Result of a simulation: boolean (accept/reject) or step-by-step trace.
  */
-type SimulationResult = boolean | SimulationStep[];
+export type SimulationResult = boolean | SimulationStep[];
 
 /**
  * Options for automaton simulation.
  */
-interface SimulationOptions {
+export type SimulationOptions = {
   stepByStep?: boolean;
-}
+};
