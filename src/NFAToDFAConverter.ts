@@ -25,7 +25,7 @@ export default class NFAToDFAConverter {
     options?: NFAToDFAConvertOptions,
   ): Automaton | { dfa: Automaton; steps: NFAToDFAConversionStep[] } {
     if (options?.stepByStep) {
-      return this.#convertStepByStep(nfa);
+      return this.convertStepByStep(nfa);
     }
     return this.convertDirectly(nfa);
   }
@@ -63,7 +63,7 @@ export default class NFAToDFAConverter {
    * Step-by-step NFA→DFA conversion private API.
    * Each step records the new subset state and transitions.
    */
-  static #convertStepByStep(nfa: Automaton): {
+  private static convertStepByStep(nfa: Automaton): {
     dfa: Automaton;
     steps: NFAToDFAConversionStep[];
   } {
