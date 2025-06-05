@@ -187,35 +187,35 @@ export default class Validator {
    * @returns {boolean} True if t is a Transition.
    */
   private static isTransition(t: unknown): t is TransitionData {
-    // TODO: Implement a more robust type guard
-    if (
-      typeof t !== 'object' ||
-      t === null ||
-      !('from' in t) ||
-      !('input' in t) ||
-      !('to' in t)
-    ) {
+    if (typeof t !== 'object' || t === null) {
       return false;
     }
-    if (
-      typeof t.from !== 'string' ||
-      t.from.length === 0 ||
-      typeof t.input !== 'string' ||
-      !Array.isArray(t.to) ||
-      t.to.length === 0 ||
-      !t.to.every(
-        (dest: unknown) => typeof dest === 'string' && dest.length > 0,
-      )
-    ) {
+
+    const transition = t as TransitionData;
+    const hasValidStructure =
+      'from' in transition &&
+      typeof transition.from === 'string' &&
+      transition.from.length > 0 &&
+      'input' in transition &&
+      typeof transition.input === 'string' &&
+      'to' in transition &&
+      Array.isArray(transition.to) &&
+      transition.to.length > 0;
+
+    if (!hasValidStructure) {
       return false;
     }
-    const seen = new Set<string>();
-    for (const dest of t.to) {
-      if (seen.has(dest)) {
-        return false;
-      }
-      seen.add(dest);
+
+    const destinations = transition.to as unknown[];
+    const hasValidDestinations = destinations.every(
+      (dest: unknown) => typeof dest === 'string' && dest.length > 0,
+    );
+
+    if (!hasValidDestinations) {
+      return false;
     }
-    return true;
+
+    const uniqueDestinations = new Set(destinations);
+    return uniqueDestinations.size === destinations.length;
   }
 }
