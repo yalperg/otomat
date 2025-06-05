@@ -27,13 +27,13 @@ export default class NFAToDFAConverter {
     if (options?.stepByStep) {
       return this.#convertStepByStep(nfa);
     }
-    return this.#convertDirectly(nfa);
+    return this.convertDirectly(nfa);
   }
 
   /**
    * Private method that performs the direct NFA→DFA conversion.
    */
-  static #convertDirectly(nfa: Automaton): Automaton {
+  private static convertDirectly(nfa: Automaton): Automaton {
     if (!nfa.isNFA()) {
       throw new ConversionError('Input automaton is not an NFA.');
     }
