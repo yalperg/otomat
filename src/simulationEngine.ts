@@ -53,21 +53,21 @@ export default class SimulationEngine {
         new Set(automaton.startStates),
       );
       // Initial step (before any input)
-      steps.push(this.createSimulationStep(currentStates));
+      steps.push(SimulationEngine.createSimulationStep(currentStates));
       for (const symbol of input) {
         if (!automaton.alphabet.has(symbol)) {
           throw new SimulationError(
             `Input symbol '${symbol}' not in automaton alphabet.`,
           );
         }
-        const transitions = this.findApplicableTransitions(
+        const transitions = SimulationEngine.findApplicableTransitions(
           automaton,
           currentStates,
           symbol,
         );
-        currentStates = this.simulateStep(automaton, currentStates, symbol);
+        currentStates = SimulationEngine.simulateStep(automaton, currentStates, symbol);
         steps.push(
-          this.createSimulationStep(currentStates, symbol, transitions),
+          SimulationEngine.createSimulationStep(currentStates, symbol, transitions),
         );
         if (currentStates.size === 0) break;
       }
@@ -91,7 +91,7 @@ export default class SimulationEngine {
             `Input symbol '${symbol}' not in automaton alphabet.`,
           );
         }
-        currentStates = this.simulateStep(automaton, currentStates, symbol);
+        currentStates = SimulationEngine.simulateStep(automaton, currentStates, symbol);
         if (currentStates.size === 0) return false;
       }
       for (const s of currentStates) {
