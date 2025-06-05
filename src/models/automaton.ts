@@ -15,7 +15,7 @@ export default class Automaton {
   public readonly transitions: Transition[];
   public readonly startStates: Set<string>;
   public readonly acceptStates: Set<string>;
-  private readonly transitionMap: Map<string, Map<string, string[]>>;
+  private transitionMap: Map<string, Map<string, string[]>>;
 
   constructor(config: AutomatonConfig) {
     Validator.validate(config);
@@ -29,27 +29,16 @@ export default class Automaton {
     });
     this.startStates = new Set(config.startStates);
     this.acceptStates = new Set(config.acceptStates);
-
-    // Build transition map for fast lookup: from state -> input -> to[]
     this.transitionMap = new Map();
-    for (const t of this.transitions) {
-      if (!this.transitionMap.has(t.from)) {
-        this.transitionMap.set(t.from, new Map());
-      }
-      const inputMap = this.transitionMap.get(t.from)!;
-      if (!inputMap.has(t.input)) {
-        inputMap.set(t.input, []);
-      }
-      for (const toState of t.to) {
-        inputMap.get(t.input)!.push(toState);
-      }
-    }
   }
 
   /**
    * Fast transition lookup: get all destination states for a given from/input.
    */
   getTransitions(from: string, input: string): string[] {
+    if (!this.transitionMap.size) {
+      this.generateTransitionMap();
+    }
     return this.transitionMap.get(from)?.get(input) ?? [];
   }
 
@@ -116,5 +105,23 @@ export default class Automaton {
     if (a.size !== b.size) return false;
     for (const v of a) if (!b.has(v)) return false;
     return true;
+  }
+
+  /**
+   * Generate the transition map for fast lookup.
+   */
+  private generateTransitionMap(): void {
+    for (const t of this.transitions) {
+      if (!this.transitionMap.has(t.from)) {
+        this.transitionMap.set(t.from, new Map());
+      }
+      const inputMap = this.transitionMap.get(t.from)!;
+      if (!inputMap.has(t.input)) {
+        inputMap.set(t.input, []);
+      }
+      for (const toState of t.to) {
+        inputMap.get(t.input)!.push(toState);
+      }
+    }
   }
 }
