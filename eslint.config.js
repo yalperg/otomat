@@ -14,11 +14,20 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         project: './tsconfig.json',
-      }
+      },
     },
-    rules: {},
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
   {
-    ignores: ['*.js', 'dist', 'node_modules', 'coverage']
-  }
+    ignores: ['*.js', 'dist', 'node_modules', 'coverage'],
+  },
 ];

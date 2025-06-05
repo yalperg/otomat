@@ -44,8 +44,7 @@ export default class NFAToDFAConverter {
       SimulationEngine.computeEpsilonClosure(nfa, nfa.startStates),
     );
     const dfaAcceptStates = Array.from(stateSubsets.entries())
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([_, subset]) =>
+      .filter(([_key, subset]) =>
         Array.from(subset).some((s) => nfa.acceptStates.has(s)),
       )
       .map(([name]) => name);
@@ -116,8 +115,7 @@ export default class NFAToDFAConverter {
     }
     const dfaStates = Array.from(visited.keys());
     const dfaAcceptStates = Array.from(visited.entries())
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([_, subset]) =>
+      .filter(([_subsetName, subset]) =>
         Array.from(subset).some((s) => nfa.acceptStates.has(s)),
       )
       .map(([name]) => name);
