@@ -60,6 +60,11 @@ export default class Validator {
           'Alphabet symbols must be non-empty strings.',
         );
       }
+      if (symbol === EPSILON) {
+        throw new InvalidAutomatonError(
+          `Symbol '${EPSILON}' is reserved and cannot be in the alphabet.`,
+        );
+      }
       if (seen.has(symbol)) {
         throw new InvalidAutomatonError(
           `Duplicate symbol '${symbol}' in alphabet.`,
