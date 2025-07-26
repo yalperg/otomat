@@ -37,9 +37,24 @@ export default class SimulationEngine {
   }
 
   /**
-   * Simulate the automaton on the given input string.
+   * Simulate the automaton on the given input string in step-by-step mode.
+   */
+  static simulate(
+    automaton: Automaton,
+    input: string,
+    options: SimulationOptions & { stepByStep: true },
+  ): SimulationStep[];
+
+  /**
+   * Simulate the automaton on the given input string in fast mode.
    * Returns true if accepted, false otherwise.
    */
+  static simulate(
+    automaton: Automaton,
+    input: string,
+    options?: SimulationOptions & { stepByStep?: false },
+  ): boolean;
+
   static simulate(
     automaton: Automaton,
     input: string,
