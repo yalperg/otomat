@@ -14,7 +14,6 @@ export default class NFAToDFAConverter {
    * @returns DFA or {dfa, steps}
    * @throws {ConversionError} If the input is not a valid NFA.
    */
-  // Overload signatures for precise return types
   static convert(
     nfa: Automaton,
     options: { stepByStep: true },

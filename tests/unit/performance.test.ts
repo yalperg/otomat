@@ -202,11 +202,7 @@ describe('Performance: Large Automata', () => {
     );
   });
 
-  // Regression test - compare performance against baseline
   it('should not regress in performance over time', () => {
-    // This would require stored baseline measurements
-    // For now, just ensure basic performance requirements are met
-
     const createSimpleAutomaton = (size: number) => {
       const states = Array.from({ length: size }, (_, i) => `q${i}`);
       const transitions = [];
