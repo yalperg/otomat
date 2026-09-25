@@ -9,6 +9,16 @@ const DFA_SIM_THRESH = Number(process.env.DFA_SIM_THRESH) || 0.01;
 const NFA2DFA_SIM_THRESH = Number(process.env.NFA2DFA_SIM_THRESH) || 13;
 const LARGE_ALPHA_THRESH = Number(process.env.LARGE_ALPHA_THRESH) || 8;
 
+// Reproducible workloads; these are wall-clock smoke checks, not microbenchmarks.
+let seed = 20260926;
+function random(): number {
+  seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return seed / 2 ** 32;
+}
+beforeEach(() => {
+  seed = 20260926;
+});
+
 describe('Performance: Large Automata', () => {
   it('should simulate a large DFA efficiently', () => {
     const states = Array.from({ length: 100 }, (_, i) => `q${i}`);
@@ -34,7 +44,7 @@ describe('Performance: Large Automata', () => {
 
     inputSizes.forEach((size) => {
       const input = Array.from({ length: size }, () =>
-        Math.random() < 0.5 ? '0' : '1',
+        random() < 0.5 ? '0' : '1',
       ).join('');
 
       const stats = measurePerformance(() => {
@@ -104,7 +114,7 @@ describe('Performance: Large Automata', () => {
     const dfa = NFAToDFAConverter.convert(nfa);
     const input = Array.from(
       { length: 1000 },
-      () => ['a', 'b', 'c'][Math.floor(Math.random() * 3)],
+      () => ['a', 'b', 'c'][Math.floor(random() * 3)],
     ).join('');
 
     const simulationStats = measurePerformance(() => {
@@ -183,7 +193,7 @@ describe('Performance: Large Automata', () => {
 
     const input = Array.from(
       { length: 500 },
-      () => alphabet[Math.floor(Math.random() * alphabet.length)],
+      () => alphabet[Math.floor(random() * alphabet.length)],
     ).join('');
 
     const stats = measurePerformance(() => {
@@ -202,7 +212,7 @@ describe('Performance: Large Automata', () => {
     );
   });
 
-  it('should not regress in performance over time', () => {
+  it('stays within simulation budgets across increasing automaton sizes', () => {
     const createSimpleAutomaton = (size: number) => {
       const states = Array.from({ length: size }, (_, i) => `q${i}`);
       const transitions = [];
@@ -235,13 +245,10 @@ describe('Performance: Large Automata', () => {
       results.push({ size, time: stats.median });
     });
 
-    // Performance should scale reasonably (not exponentially)
-    for (let i = 1; i < results.length; i++) {
-      const ratio = results[i].time / results[i - 1].time;
-      const sizeRatio = results[i].size / results[i - 1].size;
-
-      // Time should not grow faster than quadratically with size
-      expect(ratio).toBeLessThan(sizeRatio * sizeRatio);
+    // Absolute smoke budgets avoid noisy ratios between sub-millisecond samples.
+    // Indexed operation counts are checked separately in contracts.test.ts.
+    for (const result of results) {
+      expect(result.time).toBeLessThan(result.size * 2 * DFA_SIM_THRESH);
     }
 
     console.log('Scaling results:', results);

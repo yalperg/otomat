@@ -1,4 +1,4 @@
-import { Automaton } from '@/index';
+import { Automaton, SimulationEngine } from '@/index';
 import { InvalidAutomatonError } from '@/errors/index';
 
 describe('Automaton', () => {
@@ -86,5 +86,96 @@ describe('Automaton', () => {
     const a1 = new Automaton(configDFA);
     const a2 = new Automaton(configNFA);
     expect(a1.equals(a2)).toBe(false);
+  });
+});
+
+describe('Automaton data ownership and equality', () => {
+  const config = () => ({
+    states: ['s', 'f'],
+    alphabet: ['a'],
+    startStates: ['s'],
+    acceptStates: ['f'],
+    transitions: [{ from: 's', input: 'a', to: ['f'] }],
+  });
+
+  it('recognizes branching across separate transition records', () => {
+    const automaton = new Automaton({
+      ...config(),
+      transitions: [
+        { from: 's', input: 'a', to: ['s'] },
+        { from: 's', input: 'a', to: ['f'] },
+      ],
+    });
+    expect(automaton.isDFA()).toBe(false);
+    expect(automaton.isNFA()).toBe(true);
+  });
+
+  it('owns copies of configuration and exposes detached set snapshots', () => {
+    const input = config();
+    const automaton = new Automaton(input);
+    input.transitions[0].to[0] = 's';
+    input.states.push('extra');
+    input.acceptStates.length = 0;
+    automaton.states.clear();
+    automaton.alphabet.clear();
+    automaton.startStates.clear();
+    automaton.acceptStates.clear();
+    expect(automaton.states).toEqual(new Set(['s', 'f']));
+    expect(SimulationEngine.simulate(automaton, 'a')).toBe(true);
+  });
+
+  it('modifying a lookup result cannot corrupt the automaton', () => {
+    const automaton = new Automaton(config());
+    automaton.getTransitions('s', 'a').pop();
+    expect(SimulationEngine.simulate(automaton, 'a')).toBe(true);
+  });
+
+  it('rejects changes to transition destinations without changing accepted input', () => {
+    const automaton = new Automaton(config());
+    expect(() => {
+      // @ts-expect-error Also verify the boundary for JavaScript callers.
+      automaton.transitions[0].to.push('s');
+    }).toThrow(TypeError);
+    expect(SimulationEngine.simulate(automaton, 'a')).toBe(true);
+    expect(SimulationEngine.simulate(automaton, 'aa')).toBe(false);
+  });
+
+  it('deduplicates lookup targets without confusing identical records with branching', () => {
+    const input = config();
+    input.transitions.push(input.transitions[0]);
+    const automaton = new Automaton(input);
+    expect(automaton.isDFA()).toBe(true);
+    expect(automaton.getTransitions('s', 'a')).toEqual(['f']);
+  });
+
+  it('compares transition multisets independent of record and target order', () => {
+    const input = config();
+    const t = { from: 's', input: 'a', to: ['s', 'f'] };
+    const u = { from: 'f', input: 'a', to: ['s'] };
+    const a = new Automaton({ ...input, transitions: [t, u, t] });
+    const b = new Automaton({
+      ...input,
+      transitions: [u, { ...t, to: ['f', 's'] }, t],
+    });
+    expect(a.equals(b)).toBe(true);
+    expect(b.equals(a)).toBe(true);
+    expect(a.equals(new Automaton({ ...input, transitions: [t, u] }))).toBe(
+      false,
+    );
+  });
+
+  it('equality is symmetric and cannot hide a different transition behind duplicates', () => {
+    const config = {
+      states: ['s', 'f'],
+      alphabet: ['a'],
+      startStates: ['s'],
+      acceptStates: ['f'],
+    };
+    const t = { from: 's', input: 'a', to: ['f'] };
+    const u = { from: 'f', input: 'a', to: ['s'] };
+    const left = new Automaton({ ...config, transitions: [t, t] });
+    const right = new Automaton({ ...config, transitions: [t, u] });
+    expect(left.equals(right)).toBe(right.equals(left));
+    expect(left.equals(right)).toBe(false);
   });
 });

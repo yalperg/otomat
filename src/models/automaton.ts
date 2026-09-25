@@ -1,127 +1,145 @@
-import Validator from '@/utils/validator';
-import Transition, { EPSILON, TransitionData } from '@/models/transition';
+import Validator from '../utils/validator.js';
+import Transition from './transition.js';
+import { EPSILON, type AutomatonConfig } from '../types/automaton.js';
+import { InvalidAutomatonError } from '../errors/index.js';
+export type { AutomatonConfig } from '../types/automaton.js';
 
-export type AutomatonConfig = {
-  states: string[];
-  alphabet: string[];
-  transitions: (TransitionData | Transition)[];
-  startStates: string[];
-  acceptStates: string[];
-};
-
+/** Validated immutable model. Set getters and destination lookups return snapshots. */
 export default class Automaton {
-  public readonly states: Set<string>;
-  public readonly alphabet: Set<string>;
-  public readonly transitions: Transition[];
-  public readonly startStates: Set<string>;
-  public readonly acceptStates: Set<string>;
-  private transitionMap: Map<string, Map<string, string[]>>;
+  readonly #states: Set<string>;
+  readonly #alphabet: Set<string>;
+  readonly #startStates: Set<string>;
+  readonly #acceptStates: Set<string>;
+  readonly #index = new Map<string, Map<string, readonly Transition[]>>();
+  readonly transitions: readonly Transition[];
 
   constructor(config: AutomatonConfig) {
     Validator.validate(config);
-
-    this.states = new Set(config.states);
-    this.alphabet = new Set(config.alphabet);
-    this.transitions = config.transitions.map((t) => {
-      return t instanceof Transition
-        ? t
-        : Transition.create(t.from, t.input, t.to);
-    });
-    this.startStates = new Set(config.startStates);
-    this.acceptStates = new Set(config.acceptStates);
-    this.transitionMap = new Map();
-  }
-
-  /**
-   * Fast transition lookup: get all destination states for a given from/input.
-   */
-  getTransitions(from: string, input: string): string[] {
-    if (!this.transitionMap.size) {
-      this.generateTransitionMap();
-    }
-    return this.transitionMap.get(from)?.get(input) ?? [];
-  }
-
-  /**
-   * Check if this automaton is equal to another.
-   * Two automatons are equal if they have the same states, alphabet, start states,
-   * accept states, and transitions.
-   * @param {Automaton} other The other automaton to compare with
-   * @returns {boolean} True if equal, false otherwise
-   * @throws {InvalidAutomatonError} If the automaton is not valid
-   */
-  equals(other: Automaton): boolean {
-    if (this.transitions.length !== other.transitions.length) {
-      return false;
-    }
-
-    const transitionsMatch = this.transitions.every((t) =>
-      other.transitions.some((o) => t.equals(o)),
+    this.#states = new Set(config.states);
+    this.#alphabet = new Set(config.alphabet);
+    this.#startStates = new Set(config.startStates);
+    this.#acceptStates = new Set(config.acceptStates);
+    this.transitions = Object.freeze(
+      config.transitions.map((t) => Transition.create(t.from, t.input, t.to)),
     );
-
-    return (
-      this.setsEqual(this.states, other.states) &&
-      this.setsEqual(this.alphabet, other.alphabet) &&
-      this.setsEqual(this.startStates, other.startStates) &&
-      this.setsEqual(this.acceptStates, other.acceptStates) &&
-      transitionsMatch
-    );
-  }
-
-  /**
-   * Check if this automaton is a Deterministic Finite Automaton (DFA).
-   * A DFA has exactly one start state, no epsilon transitions, and each transition
-   * has a single destination state.
-   * @returns {boolean} True if this automaton is a DFA, false otherwise
-   * @throws {InvalidAutomatonError} If the automaton is not valid
-   */
-  isDFA(): boolean {
-    if (this.startStates.size !== 1) return false;
+    const index = new Map<string, Map<string, Transition[]>>();
     for (const t of this.transitions) {
-      if (t.input === EPSILON) return false;
-      if (!t.isDeterministic()) return false;
+      let symbols = index.get(t.from);
+      if (!symbols) index.set(t.from, (symbols = new Map()));
+      const records = symbols.get(t.input) ?? [];
+      records.push(t);
+      symbols.set(t.input, records);
+    }
+    for (const [state, symbols] of index) {
+      this.#index.set(
+        state,
+        new Map(
+          [...symbols].map(([symbol, records]) => [
+            symbol,
+            Object.freeze(records),
+          ]),
+        ),
+      );
+    }
+    Object.freeze(this);
+  }
+
+  get states(): Set<string> {
+    return new Set(this.#states);
+  }
+  get alphabet(): Set<string> {
+    return new Set(this.#alphabet);
+  }
+  get startStates(): Set<string> {
+    return new Set(this.#startStates);
+  }
+  get acceptStates(): Set<string> {
+    return new Set(this.#acceptStates);
+  }
+
+  hasSymbol(symbol: string): boolean {
+    return this.#alphabet.has(symbol);
+  }
+  isAcceptState(state: string): boolean {
+    return this.#acceptStates.has(state);
+  }
+
+  /** Indexed immutable records; preserves separate branches for simulation traces. */
+  getTransitionRecords(from: string, input: string): readonly Transition[] {
+    return this.#index.get(from)?.get(input) ?? EMPTY_TRANSITIONS;
+  }
+
+  getTransitions(from: string, input: string): string[] {
+    return [
+      ...new Set(this.getTransitionRecords(from, input).flatMap((t) => t.to)),
+    ];
+  }
+
+  /** Structural equality: order independent, but duplicate record counts are significant. */
+  equals(other: Automaton): boolean {
+    const keys = (automaton: Automaton) =>
+      automaton.transitions
+        .map((t) => JSON.stringify([t.from, t.input, [...t.to].sort()]))
+        .sort();
+    return (
+      setsEqual(this.#states, other.#states) &&
+      setsEqual(this.#alphabet, other.#alphabet) &&
+      setsEqual(this.#startStates, other.#startStates) &&
+      setsEqual(this.#acceptStates, other.#acceptStates) &&
+      JSON.stringify(keys(this)) === JSON.stringify(keys(other))
+    );
+  }
+
+  /** Partial DFA: missing transitions reject; duplicate identical edges are deterministic. */
+  isDFA(): boolean {
+    if (this.#startStates.size !== 1) return false;
+    for (const [state, symbols] of this.#index) {
+      for (const symbol of symbols.keys()) {
+        if (symbol === EPSILON || this.getTransitions(state, symbol).length > 1)
+          return false;
+      }
     }
     return true;
   }
 
-  /**
-   * Check if this automaton is a Non-deterministic Finite Automaton (NFA).
-   * An NFA can have multiple start states, epsilon transitions, and transitions
-   * with multiple destination states.
-   * @returns {boolean} True if this automaton is an NFA, false otherwise
-   */
+  /** Classification API: true only for automata that are not deterministic. */
   isNFA(): boolean {
     return !this.isDFA();
   }
 
-  /**
-   * Check if two sets are equal.
-   * Two sets are equal if they have the same size and contain the same elements.
-   * @param a First set
-   * @param b Second set
-   * @returns {boolean} True if the sets are equal, false otherwise
-   */
-  private setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
-    if (a.size !== b.size) return false;
-    for (const v of a) if (!b.has(v)) return false;
-    return true;
+  toJSON(): AutomatonConfig {
+    return {
+      states: [...this.#states],
+      alphabet: [...this.#alphabet],
+      startStates: [...this.#startStates],
+      acceptStates: [...this.#acceptStates],
+      transitions: this.transitions.map((t) => ({
+        from: t.from,
+        input: t.input,
+        to: [...t.to],
+      })),
+    };
   }
 
-  /**
-   * Generate the transition map for fast lookup.
-   */
-  private generateTransitionMap(): void {
-    for (const t of this.transitions) {
-      if (!this.transitionMap.has(t.from)) {
-        this.transitionMap.set(t.from, new Map());
-      }
-      const inputMap = this.transitionMap.get(t.from)!;
-      if (!inputMap.has(t.input)) {
-        inputMap.set(t.input, []);
-      }
-      for (const toState of t.to) {
-        inputMap.get(t.input)!.push(toState);
+  static fromJSON(value: unknown): Automaton {
+    let config: unknown = value;
+    if (typeof value === 'string') {
+      try {
+        config = JSON.parse(value);
+      } catch (cause) {
+        throw new InvalidAutomatonError(
+          'Invalid automaton JSON.',
+          cause instanceof Error ? cause : undefined,
+        );
       }
     }
+    Validator.validate(config);
+    return new Automaton(config);
   }
+}
+
+const EMPTY_TRANSITIONS: readonly Transition[] = Object.freeze([]);
+
+function setsEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
+  return left.size === right.size && [...left].every((item) => right.has(item));
 }

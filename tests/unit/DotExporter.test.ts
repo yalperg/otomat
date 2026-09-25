@@ -53,3 +53,39 @@ describe('DotExporter', () => {
     expect(dot).toContain('label="z"');
   });
 });
+
+describe('Distinct graph nodes and edges', () => {
+  it('preserves both edges when state names contain double underscores', () => {
+    const automaton = new Automaton({
+      states: ['a__b', 'c', 'a', 'b__c'],
+      alphabet: ['x', 'y'],
+      startStates: ['a'],
+      acceptStates: ['c'],
+      transitions: [
+        { from: 'a__b', input: 'x', to: ['c'] },
+        { from: 'a', input: 'y', to: ['b__c'] },
+      ],
+    });
+    const dot = DotExporter.export(automaton);
+    expect(dot).toContain('"a__b" -> "c" [label="x"]');
+    expect(dot).toContain('"a" -> "b__c" [label="y"]');
+  });
+
+  it('keeps start markers separate from states named start_q and _start_q', () => {
+    const automaton = new Automaton({
+      states: ['q', 'start_q', '_start_q', '_q'],
+      alphabet: ['a'],
+      startStates: ['q', '_q'],
+      acceptStates: ['start_q'],
+      transitions: [],
+    });
+    const dot = DotExporter.export(automaton);
+    const markers = [
+      ...dot.matchAll(/"([^"\n]+)" \[shape=point, style=invis\]/g),
+    ].map((match) => match[1]);
+    expect(markers).toHaveLength(2);
+    expect(new Set(markers).size).toBe(2);
+    for (const marker of markers)
+      expect(automaton.states.has(marker)).toBe(false);
+  });
+});

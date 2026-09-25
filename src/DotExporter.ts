@@ -1,4 +1,4 @@
-import Automaton from '@/models/automaton';
+import Automaton from './models/automaton.js';
 
 export default class DotExporter {
   /**
@@ -21,26 +21,41 @@ export default class DotExporter {
    */
   static generateNodeDefinitions(automaton: Automaton): string {
     const lines: string[] = [];
-    
-    // Create invisible start nodes for each start state
+
+    const used = automaton.states;
+    const startMarkers = new Map<string, string>();
     for (const state of automaton.startStates) {
-      lines.push(`  "start_${this.escape(state)}" [shape=point, style=invis];`);
+      let marker = `start_${state}`;
+      while (used.has(marker)) marker = `_${marker}`;
+      used.add(marker);
+      startMarkers.set(state, marker);
     }
-    
+    const starts = automaton.startStates;
+    const accepts = automaton.acceptStates;
+
+    // Allocate marker IDs outside the real state namespace.
+    for (const state of automaton.startStates) {
+      lines.push(
+        `  "${this.escape(startMarkers.get(state)!)}" [shape=point, style=invis];`,
+      );
+    }
+
     // Create actual state nodes
     for (const state of automaton.states) {
-      const isStart = automaton.startStates.has(state);
-      const isAccept = automaton.acceptStates.has(state);
+      const isStart = starts.has(state);
+      const isAccept = accepts.has(state);
       lines.push(
         `  "${this.escape(state)}"${this.formatNodeAttributes(isStart, isAccept)};`,
       );
     }
-    
+
     // Create invisible edges from start points to start states
     for (const state of automaton.startStates) {
-      lines.push(`  "start_${this.escape(state)}" -> "${this.escape(state)}";`);
+      lines.push(
+        `  "${this.escape(startMarkers.get(state)!)}" -> "${this.escape(state)}";`,
+      );
     }
-    
+
     return lines.join('\n');
   }
 
@@ -56,7 +71,7 @@ export default class DotExporter {
     >();
     for (const t of automaton.transitions) {
       for (const to of t.to) {
-        const key = `${t.from}__${to}`;
+        const key = JSON.stringify([t.from, to]);
         if (!edgeMap.has(key)) {
           edgeMap.set(key, { from: t.from, to, labels: [] });
         }

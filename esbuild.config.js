@@ -1,46 +1,46 @@
 import esbuild from 'esbuild';
+import { execFileSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 
+const require = createRequire(import.meta.url);
 const isDev = process.env.NODE_ENV === 'development';
+
+const declarations = {
+  name: 'declarations',
+  setup(build) {
+    build.onStart(() => {
+      execFileSync(
+        process.execPath,
+        [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.build.json'],
+        { stdio: 'inherit' },
+      );
+    });
+  },
+};
 
 const config = {
   entryPoints: ['src/index.ts'],
   bundle: true,
-  platform: 'node',
+  platform: 'neutral',
   outdir: 'dist',
   sourcemap: isDev,
-  target: ['node20'],
-  tsconfig: 'tsconfig.json',
+  target: ['es2022'],
   format: 'esm',
-  outExtension: { '.js': '.js' },
-  minify: !isDev,
+  minify: false,
   logLevel: 'info',
-  treeShaking: true,
-  conditions: ['node'],
-  mainFields: ['module', 'main'],
-  drop: isDev ? [] : ['console', 'debugger'],
-  legalComments: isDev ? 'inline' : 'none',
-  metafile: !isDev,
+  plugins: [declarations],
 };
 
-async function build() {
-  try {
-    if (isDev) {
-      const ctx = await esbuild.context(config);
-      await ctx.watch();
-      console.log('Watching for changes...');
-    } else {
-      const result = await esbuild.build(config);
-      console.log('Build completed successfully!');
-      if (result.metafile) {
-        console.log(
-          `Output files: ${Object.keys(result.metafile.outputs).length}`,
-        );
-      }
-    }
-  } catch (error) {
-    console.error('Build failed:', error);
-    process.exit(1);
+try {
+  rmSync(new URL('./dist', import.meta.url), { recursive: true, force: true });
+  if (isDev) {
+    const context = await esbuild.context(config);
+    await context.watch();
+  } else {
+    await esbuild.build(config);
   }
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
 }
-
-build();

@@ -81,3 +81,11 @@ describe('Transition', () => {
     expect(t.toString()).toBe('q0 --a--> [q1, q2]');
   });
 });
+
+describe('Invalid transition data', () => {
+  it('rejects empty transition symbols consistently with alphabet validation', () => {
+    expect(() => Transition.create('s', '', ['f'])).toThrow(
+      InvalidAutomatonError,
+    );
+  });
+});

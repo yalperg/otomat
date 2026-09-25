@@ -1,226 +1,100 @@
-import { InvalidAutomatonError } from '@/errors';
-import { AutomatonConfig } from '@/models/automaton';
-import Transition, { EPSILON, TransitionData } from '@/models/transition';
+import { InvalidAutomatonError } from '../errors/index.js';
+import {
+  EPSILON,
+  type AutomatonConfig,
+  type TransitionData,
+} from '../types/automaton.js';
 
+/** Runtime boundary shared by constructors and JSON parsing. */
 export default class Validator {
-  /**
-   * Validate an automaton configuration.
-   * @param config The automaton configuration to validate.
-   * @throws {InvalidAutomatonError} If the configuration is invalid.
-   */
-  public static validate(config: AutomatonConfig): void {
+  static validate(config: unknown): asserts config is AutomatonConfig {
     if (!config || typeof config !== 'object') {
       throw new InvalidAutomatonError('Invalid automaton configuration.');
     }
-
-    const { states, alphabet, transitions, startStates, acceptStates } = config;
-
-    this.states(states);
-    this.alphabet(alphabet);
-    this.transitions(transitions);
-    this.stateReferences(states, transitions);
-    this.startAndAcceptStates(states, startStates, acceptStates);
-    this.validateTransitionSymbols(alphabet, transitions);
-  }
-
-  /**
-   * Validate a set of states.
-   * @param states The states to validate.
-   * @throws {InvalidAutomatonError} If the states are invalid.
-   */
-  private static states(states: string[]): void {
-    if (!Array.isArray(states) || states.length === 0) {
-      throw new InvalidAutomatonError('States must be a non-empty array.');
-    }
-    const seen = new Set<string>();
-    for (const state of states) {
-      if (typeof state !== 'string' || state.length === 0) {
-        throw new InvalidAutomatonError('States must be non-empty strings.');
-      }
-      if (seen.has(state)) {
-        throw new InvalidAutomatonError(`Duplicate state '${state}' found.`);
-      }
-      seen.add(state);
-    }
-  }
-
-  /**
-   * Validate an alphabet array.
-   * @param alphabet The alphabet array to validate.
-   * @throws {InvalidAutomatonError} If the alphabet is invalid.
-   */
-  private static alphabet(alphabet: string[]): void {
-    if (!Array.isArray(alphabet) || alphabet.length === 0) {
-      throw new InvalidAutomatonError('Alphabet must be a non-empty array.');
-    }
-    const seen = new Set<string>();
-    for (const symbol of alphabet) {
-      if (typeof symbol !== 'string' || symbol.length === 0) {
-        throw new InvalidAutomatonError(
-          'Alphabet symbols must be non-empty strings.',
-        );
-      }
-      if (symbol === EPSILON) {
-        throw new InvalidAutomatonError(
-          `Symbol '${EPSILON}' is reserved and cannot be in the alphabet.`,
-        );
-      }
-      if (seen.has(symbol)) {
-        throw new InvalidAutomatonError(
-          `Duplicate symbol '${symbol}' in alphabet.`,
-        );
-      }
-      seen.add(symbol);
-    }
-  }
-
-  /**
-   * Validate an array of transitions.
-   * @param transitions The transitions to validate.
-   * @throws {InvalidAutomatonError} If any transition is invalid.
-   */
-  public static transitions(
-    transitions: Array<{ from: string; input: string; to: string[] }>,
-  ): void {
-    if (!Array.isArray(transitions)) {
-      throw new InvalidAutomatonError('Transitions must be an array.');
-    }
-    for (const t of transitions) {
-      if (!this.isTransition(t)) {
-        throw new InvalidAutomatonError('Invalid transition structure.');
-      }
-    }
-  }
-
-  /**
-   * Validate that all transition state references exist in the states array.
-   * @param states Array of valid state ids.
-   * @param transitions Array of transitions to check.
-   * @throws {InvalidAutomatonError} If any reference is invalid.
-   */
-  private static stateReferences(
-    states: string[],
-    transitions: Array<{ from: string; input: string; to: string[] }>,
-  ): void {
-    const stateSet = new Set(states);
-    for (const t of transitions) {
-      if (!this.isTransition(t)) {
-        throw new InvalidAutomatonError('Invalid transition structure.');
-      }
-      if (!stateSet.has(t.from)) {
-        throw new InvalidAutomatonError(
-          `Transition from unknown state '${t.from}'.`,
-        );
-      }
-      for (const dest of t.to) {
-        if (!stateSet.has(dest)) {
-          throw new InvalidAutomatonError(
-            `Transition to unknown state '${dest}'.`,
-          );
-        }
-      }
-    }
-  }
-
-  /**
-   * Validate that the start and accept states are valid.
-   * @param startStates The start states to validate.
-   * @param acceptStates The accept states to validate.
-   * @throws {InvalidAutomatonError} If any state is invalid.
-   */
-  private static startAndAcceptStates(
-    states: string[],
-    startStates: string[],
-    acceptStates: string[],
-  ): void {
-    if (!Array.isArray(startStates) || startStates.length === 0) {
+    const data = config as Record<string, unknown>;
+    const states = this.strings(data.states, 'States', true, true);
+    const alphabet = this.strings(data.alphabet, 'Alphabet', true, true);
+    if (alphabet.includes(EPSILON)) {
       throw new InvalidAutomatonError(
-        'Start states must be a non-empty array.',
+        `Symbol '${EPSILON}' is reserved and cannot be in the alphabet.`,
       );
     }
-    if (!Array.isArray(acceptStates)) {
-      throw new InvalidAutomatonError('Accept states must be an array.');
-    }
-
+    this.transitions(data.transitions);
     const stateSet = new Set(states);
-    // Check start states
-    for (const s of startStates) {
-      if (typeof s !== 'string' || s.length === 0) {
-        throw new InvalidAutomatonError(
-          'Start states must be non-empty strings.',
-        );
-      }
-      if (!stateSet.has(s)) {
-        throw new InvalidAutomatonError(`Start state '${s}' not in states.`);
-      }
-    }
-    // Check accept states
-    for (const s of acceptStates) {
-      if (typeof s !== 'string' || s.length === 0) {
-        throw new InvalidAutomatonError(
-          'Accept states must be non-empty strings.',
-        );
-      }
-      if (!stateSet.has(s)) {
-        throw new InvalidAutomatonError(`Accept state '${s}' not in states.`);
-      }
-    }
-  }
-
-  /**
-   * Validate transition symbols in the alphabet, excluding epsilon.
-   * @param alphabet The alphabet to validate.
-   * @param transitions The transitions to check.
-   * @throws {InvalidAutomatonError} If any transition symbol is not in the alphabet.
-   */
-  private static validateTransitionSymbols(
-    alphabet: string[],
-    transitions: (TransitionData | Transition)[],
-  ): void {
-    for (const t of transitions) {
-      if (t.input !== EPSILON && !alphabet.includes(t.input)) {
+    const alphabetSet = new Set(alphabet);
+    for (const t of data.transitions) {
+      this.references([t.from, ...t.to], stateSet, 'Transition');
+      if (t.input !== EPSILON && !alphabetSet.has(t.input)) {
         throw new InvalidAutomatonError(
           `Transition input '${t.input}' not in alphabet (except epsilon).`,
         );
       }
     }
+    const starts = this.strings(data.startStates, 'Start states', true);
+    const accepts = this.strings(data.acceptStates, 'Accept states');
+    this.references(starts, stateSet, 'Start state');
+    this.references(accepts, stateSet, 'Accept state');
   }
 
-  /**
-   * Check if an object is a valid Transition.
-   * @param t The object to check.
-   * @returns {boolean} True if t is a Transition.
-   */
-  private static isTransition(t: unknown): t is TransitionData {
-    if (typeof t !== 'object' || t === null) {
-      return false;
+  static transitions(
+    value: unknown,
+  ): asserts value is readonly TransitionData[] {
+    if (!Array.isArray(value)) {
+      throw new InvalidAutomatonError('Transitions must be an array.');
     }
-
-    const transition = t as TransitionData;
-    const hasValidStructure =
-      'from' in transition &&
-      typeof transition.from === 'string' &&
-      transition.from.length > 0 &&
-      'input' in transition &&
-      typeof transition.input === 'string' &&
-      'to' in transition &&
-      Array.isArray(transition.to) &&
-      transition.to.length > 0;
-
-    if (!hasValidStructure) {
-      return false;
+    for (const item of value) {
+      if (!item || typeof item !== 'object') {
+        throw new InvalidAutomatonError('Invalid transition structure.');
+      }
+      const t = item as Record<string, unknown>;
+      if (!this.nonemptyString(t.from) || !this.nonemptyString(t.input)) {
+        throw new InvalidAutomatonError(
+          'Transition source and input must be non-empty strings.',
+        );
+      }
+      this.strings(t.to, 'Transition destinations', true, true);
     }
+  }
 
-    const destinations = transition.to as unknown[];
-    const hasValidDestinations = destinations.every(
-      (dest: unknown) => typeof dest === 'string' && dest.length > 0,
-    );
+  private static nonemptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.length > 0;
+  }
 
-    if (!hasValidDestinations) {
-      return false;
+  private static strings(
+    value: unknown,
+    label: string,
+    nonempty = false,
+    unique = false,
+  ): string[] {
+    if (!Array.isArray(value) || (nonempty && value.length === 0)) {
+      throw new InvalidAutomatonError(
+        `${label} must be ${nonempty ? 'a non-empty' : 'an'} array.`,
+      );
     }
+    // Array.from also exposes sparse entries, which Array.every would skip.
+    const items: unknown[] = Array.from(value);
+    if (!items.every(this.nonemptyString)) {
+      throw new InvalidAutomatonError(
+        `${label} must contain non-empty strings.`,
+      );
+    }
+    if (unique && new Set(items).size !== items.length) {
+      throw new InvalidAutomatonError(`${label} must not contain duplicates.`);
+    }
+    return items;
+  }
 
-    const uniqueDestinations = new Set(destinations);
-    return uniqueDestinations.size === destinations.length;
+  private static references(
+    values: readonly string[],
+    states: ReadonlySet<string>,
+    label: string,
+  ): void {
+    for (const state of values) {
+      if (!states.has(state)) {
+        throw new InvalidAutomatonError(
+          `${label} references unknown state '${state}'.`,
+        );
+      }
+    }
   }
 }

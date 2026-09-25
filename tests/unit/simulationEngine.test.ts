@@ -1,4 +1,9 @@
-import { Automaton, SimulationEngine, Transition } from '@/index';
+import {
+  Automaton,
+  SimulationEngine,
+  Transition,
+  SimulationError,
+} from '@/index';
 
 describe('SimulationEngine', () => {
   describe('DFA simulation', () => {
@@ -189,5 +194,87 @@ describe('SimulationEngine', () => {
         false,
       );
     });
+  });
+});
+
+describe('Input and trace behavior', () => {
+  const config = () => ({
+    states: ['s', 'f'],
+    alphabet: ['a'],
+    startStates: ['s'],
+    acceptStates: ['f'],
+    transitions: [{ from: 's', input: 'a', to: ['f'] }],
+  });
+
+  it.each([false, true])(
+    'validates invalid suffixes after a dead end (trace=%s)',
+    (stepByStep) => {
+      const automaton = new Automaton({
+        states: ['s'],
+        alphabet: ['a'],
+        transitions: [],
+        startStates: ['s'],
+        acceptStates: [],
+      });
+      expect(() =>
+        SimulationEngine.simulate(automaton, 'a?', { stepByStep }),
+      ).toThrow(SimulationError);
+    },
+  );
+
+  it('supports explicit multi-character tokens without guessing string tokenization', () => {
+    const automaton = new Automaton({
+      ...config(),
+      alphabet: ['word', '😀'],
+      transitions: [
+        { from: 's', input: 'word', to: ['s'] },
+        { from: 's', input: '😀', to: ['f'] },
+      ],
+    });
+    expect(SimulationEngine.simulate(automaton, ['word', '😀'])).toBe(true);
+    expect(SimulationEngine.simulate(automaton, '😀')).toBe(true);
+    expect(() => SimulationEngine.simulate(automaton, 'word😀')).toThrow(
+      SimulationError,
+    );
+    expect(
+      SimulationEngine.simulate(automaton, ['word', '😀'], {
+        stepByStep: true,
+      }),
+    ).toHaveLength(3);
+  });
+
+  it('handles epsilon cycles, empty input and closure after the last token', () => {
+    const nfa = new Automaton({
+      states: ['s', 'm', 'f'],
+      alphabet: ['a'],
+      startStates: ['s'],
+      acceptStates: ['f'],
+      transitions: [
+        { from: 's', input: 'ε', to: ['m'] },
+        { from: 'm', input: 'ε', to: ['s'] },
+        { from: 'm', input: 'a', to: ['m', 'f'] },
+        { from: 'f', input: 'ε', to: ['s'] },
+      ],
+    });
+    expect(SimulationEngine.computeEpsilonClosure(nfa, new Set(['s']))).toEqual(
+      new Set(['s', 'm']),
+    );
+    expect(SimulationEngine.simulate(nfa, '')).toBe(false);
+    expect(SimulationEngine.simulate(nfa, 'a')).toBe(true);
+    const trace = SimulationEngine.simulate(nfa, 'a', { stepByStep: true });
+    expect(new Set(trace[1].currentStates)).toEqual(new Set(['s', 'm', 'f']));
+  });
+
+  it('retains all consuming records in a branching simulation trace', () => {
+    const nfa = new Automaton({
+      ...config(),
+      transitions: [
+        { from: 's', input: 'a', to: ['s'] },
+        { from: 's', input: 'a', to: ['f'] },
+      ],
+    });
+    const trace = SimulationEngine.simulate(nfa, 'a', { stepByStep: true });
+    expect(trace[1].transitions).toHaveLength(2);
+    expect(trace[1].transition).toBeUndefined();
   });
 });

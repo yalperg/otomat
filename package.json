@@ -10,22 +10,26 @@
   "module": "dist/index.js",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && node esbuild.config.js",
-    "dev": "rm -rf ./dist && NODE_ENV=development node esbuild.config.js",
+    "build": "node esbuild.config.js",
+    "dev": "NODE_ENV=development node esbuild.config.js",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
-    "test": "jest --testPathIgnorePatterns='perf'",
-    "test:watch": "jest --watch --testPathIgnorePatterns='perf'",
-    "test:coverage": "jest --coverage --testPathIgnorePatterns='perf'",
-    "test:perf": "DFA_SIM_THRESH=0.01 NFA2DFA_SIM_THRESH=13 LARGE_ALPHA_THRESH=8 jest '.*perf.*\\.test\\.ts$'"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:perf": "jest --testMatch='**/tests/performance/**/*.test.ts' --runInBand --coverage=false",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:package": "node --test tests/integration/package.test.mjs",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run test:package",
+    "prepack": "pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
@@ -39,5 +43,9 @@
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.1"
+  },
+  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=20"
   }
 }

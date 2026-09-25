@@ -1,200 +1,122 @@
-import { SimulationError } from '@/errors';
-import Automaton from '@/models/automaton';
-import Transition from '@/models/transition';
+import { SimulationError } from './errors/index.js';
+import type Automaton from './models/automaton.js';
+import type Transition from './models/transition.js';
+import { advance, epsilonClosure } from './algorithms/operations.js';
+import type {
+  SimulationInput,
+  SimulationOptions,
+  SimulationStep,
+  SimulationResult,
+} from './types/simulation.js';
+export type {
+  SimulationInput,
+  SimulationOptions,
+  SimulationStep,
+  SimulationResult,
+} from './types/simulation.js';
 
-/**
- * Engine for simulating DFA and NFA automata.
- */
 export default class SimulationEngine {
-  /**
-   * Simulate a single step: given current states and an input symbol, return the set of next states.
-   * Handles both DFA and NFA (no epsilon yet).
-   */
   static simulateStep(
     automaton: Automaton,
-    currentStates: Set<string>,
-    inputSymbol: string,
+    states: ReadonlySet<string>,
+    symbol: string,
   ): Set<string> {
-    if (!automaton.alphabet.has(inputSymbol)) {
-      throw new SimulationError(
-        `Input symbol '${inputSymbol}' not in automaton alphabet.`,
-      );
-    }
-    // Compute epsilon closure before consuming input
-    const states = SimulationEngine.computeEpsilonClosure(
-      automaton,
-      currentStates,
-    );
-    const nextStates = new Set<string>();
-    for (const state of states) {
-      const toStates = automaton.getTransitions(state, inputSymbol);
-      for (const toState of toStates) {
-        nextStates.add(toState);
-      }
-    }
-    // Compute epsilon closure after consuming input
-    return SimulationEngine.computeEpsilonClosure(automaton, nextStates);
+    validateSymbol(automaton, symbol);
+    return advance(automaton, epsilonClosure(automaton, states), symbol);
   }
 
   static simulate(
     automaton: Automaton,
-    input: string,
-    options: SimulationOptions & { stepByStep: true },
+    input: SimulationInput,
+    options: { stepByStep: true },
   ): SimulationStep[];
   static simulate(
     automaton: Automaton,
-    input: string,
-    options?: SimulationOptions,
+    input: SimulationInput,
+    options?: { stepByStep?: false },
   ): boolean;
   static simulate(
     automaton: Automaton,
-    input: string,
+    input: SimulationInput,
+    options?: SimulationOptions,
+  ): SimulationResult;
+  static simulate(
+    automaton: Automaton,
+    input: SimulationInput,
     options?: SimulationOptions,
   ): SimulationResult {
-    if (options && options.stepByStep) {
-      // Step-by-step mode
-      const steps: SimulationStep[] = [];
-      let currentStates = SimulationEngine.computeEpsilonClosure(
-        automaton,
-        new Set(automaton.startStates),
+    if (typeof input !== 'string' && !Array.isArray(input)) {
+      throw new SimulationError(
+        'Input must be a string or an array of symbols.',
       );
-      // Initial step (before any input)
-      steps.push(SimulationEngine.createSimulationStep(currentStates));
-      for (const symbol of input) {
-        if (!automaton.alphabet.has(symbol)) {
-          throw new SimulationError(
-            `Input symbol '${symbol}' not in automaton alphabet.`,
-          );
-        }
-        const transitions = SimulationEngine.findApplicableTransitions(
-          automaton,
-          currentStates,
-          symbol,
-        );
-        currentStates = SimulationEngine.simulateStep(automaton, currentStates, symbol);
-        steps.push(
-          SimulationEngine.createSimulationStep(currentStates, symbol, transitions),
-        );
-        if (currentStates.size === 0) break;
-      }
-      return steps;
-    } else {
-      // Fast mode (default)
-      let currentStates = SimulationEngine.computeEpsilonClosure(
-        automaton,
-        new Set(automaton.startStates),
-      );
-      if (input.length === 0) {
-        // Accept if any start state (after epsilon closure) is accept state
-        for (const s of currentStates) {
-          if (automaton.acceptStates.has(s)) return true;
-        }
-        return false;
-      }
-      for (const symbol of input) {
-        if (!automaton.alphabet.has(symbol)) {
-          throw new SimulationError(
-            `Input symbol '${symbol}' not in automaton alphabet.`,
-          );
-        }
-        currentStates = SimulationEngine.simulateStep(automaton, currentStates, symbol);
-        if (currentStates.size === 0) return false;
-      }
-      for (const s of currentStates) {
-        if (automaton.acceptStates.has(s)) return true;
-      }
-      return false;
     }
+
+    const symbols = [...input];
+    // Validate the entire input, including symbols after a dead end.
+    for (const symbol of symbols) validateSymbol(automaton, symbol);
+    let states = epsilonClosure(automaton, automaton.startStates);
+    const steps = options?.stepByStep
+      ? [this.createSimulationStep(states)]
+      : undefined;
+
+    for (const symbol of symbols) {
+      const transitions = steps
+        ? applicableTransitions(automaton, states, symbol)
+        : undefined;
+      states = advance(automaton, states, symbol);
+      steps?.push(this.createSimulationStep(states, symbol, transitions));
+      if (!states.size) break;
+    }
+
+    return steps ?? [...states].some((state) => automaton.isAcceptState(state));
   }
 
-  /**
-   * Compute the epsilon closure of a set of states. (No epsilon support yet)
-   * Returns the input set unchanged for now.
-   */
   static computeEpsilonClosure(
     automaton: Automaton,
-    states: Set<string>,
+    states: ReadonlySet<string>,
   ): Set<string> {
-    // Epsilon closure: all states reachable from `states` via epsilon (ε) transitions
-    const closure = new Set(states);
-    const stack = [...states];
-    while (stack.length > 0) {
-      const state = stack.pop()!;
-      for (const t of automaton.transitions) {
-        if (t.from === state && t.input === 'ε') {
-          for (const toState of t.to) {
-            if (!closure.has(toState)) {
-              closure.add(toState);
-              stack.push(toState);
-            }
-          }
-        }
-      }
-    }
-    return closure;
+    return epsilonClosure(automaton, states);
   }
 
-  /**
-   * Helper: Create a SimulationStep object from current states, input symbol, and transitions.
-   */
   static createSimulationStep(
-    currentStates: Set<string>,
+    states: ReadonlySet<string>,
     inputSymbol?: string,
-    transitions?: Transition[],
+    transitions: readonly Transition[] = [],
   ): SimulationStep {
     return {
-      currentStates: Array.from(currentStates),
+      currentStates: [...states],
       inputSymbol,
-      transition:
-        transitions && transitions.length === 1 ? transitions[0] : undefined,
+      transitions: [...transitions],
+      transition: transitions.length === 1 ? transitions[0] : undefined,
     };
   }
 
-  /**
-   * Helper: Find all transitions applicable from current states on input symbol.
-   */
   static findApplicableTransitions(
     automaton: Automaton,
-    currentStates: Set<string>,
-    inputSymbol: string,
+    states: ReadonlySet<string>,
+    symbol: string,
   ): Transition[] {
-    const result: Transition[] = [];
-    // Use epsilon closure of current states
-    const closure = SimulationEngine.computeEpsilonClosure(
+    return applicableTransitions(
       automaton,
-      currentStates,
+      epsilonClosure(automaton, states),
+      symbol,
     );
-    for (const state of closure) {
-      const toStates = automaton.getTransitions(state, inputSymbol);
-      if (toStates.length > 0) {
-        for (const t of automaton.transitions) {
-          if (t.from === state && t.input === inputSymbol) {
-            result.push(t);
-          }
-        }
-      }
-    }
-    return result;
   }
 }
 
-/**
- * Represents a single step in a simulation.
- */
-type SimulationStep = {
-  currentStates: string[];
-  inputSymbol?: string | undefined;
-  transition?: Transition | undefined;
-};
+function validateSymbol(automaton: Automaton, symbol: string): void {
+  if (!automaton.hasSymbol(symbol))
+    throw new SimulationError(
+      `Input symbol '${symbol}' not in automaton alphabet.`,
+    );
+}
 
-/**
- * Result of a simulation: boolean (accept/reject) or step-by-step trace.
- */
-export type SimulationResult = boolean | SimulationStep[];
-
-/**
- * Options for automaton simulation.
- */
-export type SimulationOptions = {
-  stepByStep?: boolean;
-};
+function applicableTransitions(
+  automaton: Automaton,
+  states: Iterable<string>,
+  symbol: string,
+): Transition[] {
+  return [...states].flatMap((state) =>
+    automaton.getTransitionRecords(state, symbol),
+  );
+}
