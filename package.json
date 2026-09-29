@@ -1,10 +1,33 @@
 {
   "name": "otomat",
-  "version": "1.0.0",
-  "keywords": [],
+  "version": "1.0.1",
+  "packageManager": "pnpm@8.6.6",
+  "keywords": [
+    "automata",
+    "finite-automata",
+    "dfa",
+    "nfa",
+    "typescript",
+    "graphviz"
+  ],
   "description": "Library for working with finite automata (DFA/NFA), including simulation, NFA→DFA conversion (with step-by-step support), epsilon transitions, serialization, and DOT export.",
   "license": "MIT",
-  "author": "Yunus Alper Göl <yalperg>",
+  "author": {
+    "name": "Yunus Alper Göl",
+    "url": "https://github.com/yalperg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yalperg/otomat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yalperg/otomat/issues"
+  },
+  "homepage": "https://github.com/yalperg/otomat#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -27,9 +50,8 @@
     "test:coverage": "jest --coverage",
     "test:perf": "jest --testMatch='**/tests/performance/**/*.test.ts' --runInBand --coverage=false",
     "typecheck": "tsc --noEmit --incremental false",
-    "test:package": "node --test tests/integration/package.test.mjs",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run test:package",
-    "prepack": "pnpm run build"
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",

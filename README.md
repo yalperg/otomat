@@ -51,8 +51,6 @@ src/
 
 tests/
   unit/                      Regression, contract and language-oracle tests
-  types/                     Positive/negative TypeScript API assertions
-  integration/               Packed release tested as an external consumer
   performance/               Reproducible performance smoke checks
 ```
 
@@ -60,7 +58,7 @@ tests/
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm run check          # Typecheck, lint, unit tests, build/pack/consumer tests
+pnpm run check          # Typecheck, lint, unit tests and build
 pnpm run test:coverage  # Unit tests with coverage
 pnpm run test:perf      # Separate performance smoke checks, without coverage
 pnpm run build         # Clean dist, emit .d.ts, bundle ESM
